@@ -1,0 +1,15 @@
+{{broker-name}}:
+  image: confluentinc/cp-kafka:latest
+  hostname: {{broker-name}}
+  container-name: {{broker-name}}
+  depends-on:
+    {{zookeeper-containers}}
+  environment:
+    KAFKA_BROKER_ID: {{broker-id}}
+    KAFKA_ZOOKEEPER_CONNECT: {{zookeeper-ports}}
+    KAFKA_LISTENERS: INTERNAL://{{broker-port-internal}}, PLAINTEXT://{{broker-port-external}}
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://{{advertised-broker-port-external}},INTERNAL://{{advertised-broker-port-internal}}
+    KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+    KAFKA_JMX_PORT: {{broker-jmx-port}}
+    KAFKA_JMX_HOSTNAME: {{broker-name}}

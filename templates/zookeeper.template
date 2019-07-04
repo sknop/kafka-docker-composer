@@ -1,0 +1,11 @@
+{{zookeeper-name}}:
+  image: confluentinc/cp-zookeeper:latest
+  hostname: {{zookeeper-name}}
+  container_name: {{zookeeper-name}}
+  environment:
+    ZOOKEEPER_SERVER_ID: {{zookeeper-id}}
+    ZOOKEEPER_CLIENT_PORT: {{zookeeper-port}}
+    ZOOKEEPER_TICK_TIME: "2000"
+    ZOOKEEPER_SERVERS: {{zookeeper-internal-ports}}
+    KAFKA_JMX_PORT: {{zookeeper-jmx-port}}
+    KAFKA_JMX_HOSTNAME: localhost
