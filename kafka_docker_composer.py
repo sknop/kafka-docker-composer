@@ -92,7 +92,7 @@ class YamlGenerator:
 
         self.zookeeper_containers = "\n{}".format(self.depends_offset).\
             join( [ '- ' + x[ZOOKEEPER_NAME] for x in zookeepers ] )
-        self.zookeeper_ports = ",".join( [ x[ZOOKEEPER_NAME] + x[ZOOKEEPER_PORT] for x in zookeepers ] )
+        self.zookeeper_ports = ",".join( [ x[ZOOKEEPER_NAME] + ':' + x[ZOOKEEPER_PORT] for x in zookeepers ] )
         self.zookeeper_internal_ports = ";".join( [ x[ZOOKEEPER_NAME] + ":2888:3888" for x in zookeepers ] )
 
         for zk in zookeepers:
@@ -116,13 +116,16 @@ class YamlGenerator:
         brokers = []
 
         for id in range(1,self.args.brokers + 1):
+            port = 9090 + id
+            internal_port = 19090 + id
+
             broker = {}
             broker[BROKER_NAME] = "kafka" + str(id)
             broker[BROKER_ID] = str(id)
-            broker[BROKER_PORT_INTERNAL] = "{}:{}".format(broker[BROKER_NAME],"19092")
-            broker[BROKER_PORT_EXTERNAL] = "{}:{}".format(broker[BROKER_NAME],"9092")
-            broker[BROKER_ADVERTISED_PORT_INTERNAL] = "{}:{}".format(broker[BROKER_NAME],"19092")
-            broker[BROKER_ADVERTISED_PORT_EXTERNAL] = "{}:{}".format("localhost","9092")
+            broker[BROKER_PORT_INTERNAL] = "{}:{}".format(broker[BROKER_NAME],str(internal_port))
+            broker[BROKER_PORT_EXTERNAL] = "{}:{}".format(broker[BROKER_NAME],str(port))
+            broker[BROKER_ADVERTISED_PORT_INTERNAL] = "{}:{}".format(broker[BROKER_NAME],str(internal_port))
+            broker[BROKER_ADVERTISED_PORT_EXTERNAL] = "{}:{}".format("localhost",str(port))
             broker[BROKER_JMX_PORT] = "9999"
             broker[ZOOKEEPER_CONTAINERS] = self.zookeeper_containers
             broker[ZOOKEEPER_PORTS] = self.zookeeper_ports

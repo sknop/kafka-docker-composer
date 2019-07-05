@@ -6,7 +6,7 @@ import os.path
 
 
 class TestYamlGenerator(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         args = Namespace()
         setattr(args, "docker_compose_template", os.path.join("templates","docker-compose.template") )
         self.generator = YamlGenerator(args)
