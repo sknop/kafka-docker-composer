@@ -58,6 +58,7 @@ class YamlGenerator:
 
         self.zookeeper_offset = YamlGenerator.find_offset(self.master_template, ZOOKEEPER_SERVICES)
         self.broker_offset = YamlGenerator.find_offset(self.master_template, BROKER_SERVICES)
+        self.depends_offset = YamlGenerator.find_offset(self.broker_template, ZOOKEEPER_CONTAINERS)
 
         self.zookeeper_containers = ""
         self.zookeeper_ports = ""
@@ -89,7 +90,7 @@ class YamlGenerator:
 
             zookeepers.append(zookeeper)
 
-        self.zookeeper_containers = "{}\n".format(self.broker_offset).\
+        self.zookeeper_containers = "\n{}".format(self.depends_offset).\
             join( [ '- ' + x[ZOOKEEPER_NAME] for x in zookeepers ] )
         self.zookeeper_ports = ",".join( [ x[ZOOKEEPER_NAME] + x[ZOOKEEPER_PORT] for x in zookeepers ] )
         self.zookeeper_internal_ports = ";".join( [ x[ZOOKEEPER_NAME] + ":2888:3888" for x in zookeepers ] )
