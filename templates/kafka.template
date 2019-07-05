@@ -2,7 +2,7 @@
   image: confluentinc/cp-kafka:latest
   hostname: {{broker-name}}
   container_name: {{broker-name}}
-  depends-on:
+  depends_on:
     {{zookeeper-containers}}
   environment:
     KAFKA_BROKER_ID: {{broker-id}}
