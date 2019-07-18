@@ -17,6 +17,7 @@ DOCKER_COMPOSE_FILE="docker-compose.yaml"
 #
 BROKER_NAME="{{broker-name}}"
 BROKER_ID="{{broker-id}}"
+BROKER_PORT="{{broker-port}}"
 BROKER_PORT_INTERNAL="{{broker-port-internal}}"
 BROKER_PORT_EXTERNAL="{{broker-port-external}}"
 BROKER_ADVERTISED_PORT_EXTERNAL="{{broker-advertised-port-external}}"
@@ -122,6 +123,7 @@ class YamlGenerator:
             broker = {}
             broker[BROKER_NAME] = "kafka" + str(id)
             broker[BROKER_ID] = str(id)
+            broker[BROKER_PORT] = str(port)
             broker[BROKER_PORT_INTERNAL] = "{}:{}".format(broker[BROKER_NAME],str(internal_port))
             broker[BROKER_PORT_EXTERNAL] = "{}:{}".format(broker[BROKER_NAME],str(port))
             broker[BROKER_ADVERTISED_PORT_INTERNAL] = "{}:{}".format(broker[BROKER_NAME],str(internal_port))

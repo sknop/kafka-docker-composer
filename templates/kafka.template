@@ -9,7 +9,9 @@
     KAFKA_ZOOKEEPER_CONNECT: {{zookeeper-ports}}
     KAFKA_LISTENERS: INTERNAL://{{broker-port-internal}}, PLAINTEXT://{{broker-port-external}}
     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://{{broker-advertised-port-external}},INTERNAL://{{broker-advertised-port-internal}}
+    KAFKA_ADVERTISED_LISTENERS: INTERNAL://{{broker-advertised-port-internal}}, PLAINTEXT://{{broker-advertised-port-external}}
     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
     KAFKA_JMX_PORT: {{broker-jmx-port}}
     KAFKA_JMX_HOSTNAME: {{broker-name}}
+  ports:
+    - {{broker-port}}:{{broker-port}}
