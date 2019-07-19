@@ -23,6 +23,8 @@ BROKER_PORT_EXTERNAL="{{broker-port-external}}"
 BROKER_ADVERTISED_PORT_EXTERNAL="{{broker-advertised-port-external}}"
 BROKER_ADVERTISED_PORT_INTERNAL="{{broker-advertised-port-internal}}"
 BROKER_JMX_PORT="{{broker-jmx-port}}"
+BROKER_RACK="{{broker-rack}}"
+
 #
 # single (zookeeper)
 #
@@ -30,6 +32,8 @@ ZOOKEEPER_NAME="{{zookeeper-name}}"
 ZOOKEEPER_ID="{{zookeeper-id}}"
 ZOOKEEPER_PORT="{{zookeeper-port}}"
 ZOOKEEPER_JMX_PORT="{{zookeeper-jmx-port}}"
+ZOOKEEPER_GROUPS="{{zookeeper-groups}}"
+
 #
 # services
 #
@@ -64,6 +68,7 @@ class YamlGenerator:
         self.zookeeper_containers = ""
         self.zookeeper_ports = ""
         self.zookeeper_internal_ports = ""
+        self.zookeeper_groups = ""
 
     def generate(self):
         zookeeper_services = self.generate_zookeeper_services()
@@ -116,6 +121,8 @@ class YamlGenerator:
     def generate_broker_services(self):
         brokers = []
 
+        rack = 0
+
         for id in range(1,self.args.brokers + 1):
             port = 9090 + id
             internal_port = 19090 + id
@@ -131,8 +138,11 @@ class YamlGenerator:
             broker[BROKER_JMX_PORT] = "9999"
             broker[ZOOKEEPER_CONTAINERS] = self.zookeeper_containers
             broker[ZOOKEEPER_PORTS] = self.zookeeper_ports
+            broker[BROKER_RACK] = str(rack)
 
             brokers.append(broker)
+
+            rack = YamlGenerator.next_rack(rack, self.args.racks)
 
         services = "\n".join( [ self.generate_one_broker_service(x) for x in brokers ] )
 
@@ -147,6 +157,13 @@ class YamlGenerator:
         result = [ self.broker_offset + line for line in lines ]
 
         return "\n".join(result)
+
+    @staticmethod
+    def next_rack(rack, total_racks):
+        rack = rack + 1
+        if rack >= total_racks:
+            rack = 0
+        return rack
 
     @staticmethod
     def find_offset(template, placeholder):
@@ -175,6 +192,10 @@ if __name__ == '__main__':
                         help="Template file for zookeepers, default \"{}\"".format(ZOOKEEPER_TEMPLATE))
     parser.add_argument('--docker-compose-file', default=DOCKER_COMPOSE_FILE,
                         help="Output file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_FILE))
+    parser.add_argument('--racks', type=int, default=1,
+                        help="Number of racks among which the brokers will be distributed evenly")
+    parser.add_argument('--zookeeper-groups', type=int, default=1,
+                        help="Number of zookeeper groups in a hierarchy")
 
     args = parser.parse_args()
 

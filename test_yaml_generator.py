@@ -1,22 +1,33 @@
 import unittest
 
 from kafka_docker_composer import YamlGenerator
-from argparse import Namespace
-import os.path
 
 
 class TestYamlGenerator(unittest.TestCase):
     def setUp(self):
-        args = Namespace()
-        setattr(args, "docker_compose_template", os.path.join("templates","docker-compose.template") )
-        self.generator = YamlGenerator(args)
-
+        pass
 
 class TestOffset(TestYamlGenerator):
     def testSimpleOffset(self):
         placeholder="{{myservice}}"
         offset="   "
-        template=[ "services:", offset + placeholder]
+        template="\n".join([ "services:", offset + placeholder])
 
         found = YamlGenerator.find_offset(template, placeholder)
         self.assertEqual(offset, found)
+
+class TestNextRack(TestYamlGenerator):
+    def testSimpleAdd(self):
+        rack = 0
+        next = YamlGenerator.next_rack(rack,2)
+        self.assertEqual(next,1)
+
+    def testOne(self):
+        rack = 0
+        next = YamlGenerator.next_rack(rack,1)
+        self.assertEqual(next,0)
+
+    def testTotalRollover(self):
+        rack = 1
+        next = YamlGenerator.next_rack(rack,2)
+        self.assertEqual(next, 0)
