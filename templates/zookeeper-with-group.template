@@ -9,4 +9,5 @@
     ZOOKEEPER_SERVERS: {{zookeeper-internal-ports}}
     KAFKA_JMX_PORT: {{zookeeper-jmx-port}}
     KAFKA_JMX_HOSTNAME: localhost
+    ZOOKEEPER_GROUPS: {{zookeeper-groups}}
 

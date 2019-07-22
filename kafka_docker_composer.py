@@ -3,6 +3,7 @@ from __future__ import print_function
 import argparse
 import re
 import os.path
+import sys
 
 # constants
 
@@ -87,12 +88,30 @@ class YamlGenerator:
     def generate_zookeeper_services(self):
         zookeepers = []
 
+        if self.args.zookeeper_groups > 1:
+            zookeeper_group = ""
+
+            zookeepers_per_group = self.args.zookeepers // self.args.zookeeper_groups
+            rest = self.args.zookeepers % self.args.zookeeper_groups
+            if rest != 0:
+                print("ERROR, no equal distribution of zookeeper nodes across groups #ZK {} #GR {} rest {} "
+                      .format(self.args.zookeepers, self.args.zookeeper_groups, rest))
+                sys.exit(-1)
+
+            groups = []
+            for group in range(self.args.zookeeper_groups):
+                zks = ":".join([ str(1 + x + group * zookeepers_per_group) for x in range(zookeepers_per_group)])
+                groups.append(zks)
+
+            self.zookeeper_groups = ";".join(groups)
+
         for zk in range(1,self.args.zookeepers + 1):
             zookeeper = {}
             zookeeper[ZOOKEEPER_NAME] = "zookeeper" + str(zk)
             zookeeper[ZOOKEEPER_ID] = str(zk)
             zookeeper[ZOOKEEPER_PORT] = "2181"
             zookeeper[ZOOKEEPER_JMX_PORT] = "9999"
+            zookeeper[ZOOKEEPER_GROUPS] = self.zookeeper_groups
 
             zookeepers.append(zookeeper)
 

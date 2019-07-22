@@ -2,7 +2,6 @@ import unittest
 
 from kafka_docker_composer import YamlGenerator
 
-
 class TestYamlGenerator(unittest.TestCase):
     def setUp(self):
         pass
