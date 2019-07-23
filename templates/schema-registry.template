@@ -1,0 +1,13 @@
+  schema_registry:
+    image: confluentinc/cp-schema-registry
+    hostname: {{schema_registry-name}}
+    container_name: {{schema_registry-name}}
+    depends_on:
+      {{kafka-containers}}
+    ports:
+      - "{{schema-registry-mapped-port}}:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: {{schema_registry-name}}
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: {{kafka-bootstrap-servers}}
+
+PLAINTEXT://kafka1:19091,PLAINTEXT://kafka2:19092,PLAINTEXT://kafka3:19093,PLAINTEXT://kafka4:19094,PLAINTEXT://kafka5:19095,PLAINTEXT://kafka6:19096

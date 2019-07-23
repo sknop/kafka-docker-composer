@@ -28,6 +28,9 @@ BROKER_ADVERTISED_PORT_INTERNAL="{{broker-advertised-port-internal}}"
 BROKER_JMX_PORT="{{broker-jmx-port}}"
 BROKER_RACK="{{broker-rack}}"
 
+BROKER_INTERNAL_PROTOCOL="{{broker-internal-protocol}}"
+BROKER_EXTERNAL_PROTOCOL="{{broker-external-protocol}}"
+
 #
 # single (zookeeper)
 #
@@ -160,6 +163,8 @@ class YamlGenerator:
             broker[ZOOKEEPER_CONTAINERS] = self.zookeeper_containers
             broker[ZOOKEEPER_PORTS] = self.zookeeper_ports
             broker[BROKER_RACK] = str(rack)
+            broker[BROKER_INTERNAL_PROTOCOL] = self.args.broker_internal_protocol
+            broker[BROKER_EXTERNAL_PROTOCOL] = self.args.broker_external_protocol
 
             brokers.append(broker)
 
@@ -220,8 +225,10 @@ if __name__ == '__main__':
 
     # optional with defaults
 
-    parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers")
-    parser.add_argument('-z', '--zookeepers', default=1, type=int, help="Number of ZooKeepers")
+    parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers [1]")
+    parser.add_argument('-z', '--zookeepers', default=1, type=int, help="Number of ZooKeepers [1]")
+    parser.add_argument('-s', '--schema-registry', default=0, type=int, help="Number of Schema Registry instances [0]")
+
     parser.add_argument('--docker-compose-template', default=DOCKER_COMPOSE_TEMPLATE,
                         help="Template file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_TEMPLATE))
     parser.add_argument('--broker-template', default=BROKER_TEMPLATE,
@@ -230,6 +237,10 @@ if __name__ == '__main__':
                         help="Template file for zookeepers, default \"{}\"".format(ZOOKEEPER_TEMPLATE))
     parser.add_argument('--docker-compose-file', default=DOCKER_COMPOSE_FILE,
                         help="Output file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_FILE))
+
+    parser.add_argument('--broker-internal-protocol', default="PLAINTEXT", help="Internal protocol used (default PLAINTEXT)")
+    parser.add_argument('--broker-external-protocol', default="PLAINTEXT", help="External protocol used (default PLAINTEXT)")
+
     parser.add_argument('--racks', type=int, default=1,
                         help="Number of racks among which the brokers will be distributed evenly")
     parser.add_argument('--zookeeper-groups', type=int, default=1,
