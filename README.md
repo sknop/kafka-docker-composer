@@ -31,6 +31,10 @@ optional arguments:
   --docker-compose-file DOCKER_COMPOSE_FILE
                         Output file for docker-compose, default "docker-
                         compose.yaml"
+  -c CONFIG, --config CONFIG
+                        Properties config file, values will be overriden by
+                        command line arguments
+
 ```
 
 **Example:**
@@ -43,7 +47,9 @@ There is a master template ```templates/docker-compose.template``` that pulls in
 Create new templates if you want to add security or additional features, or change the docker image 
 (by default I use the confluent docker images).
 
-**TODO:**
+It is now also possible to use a config file instead of specifying all parameters by hand for 
+reproducabilty and ease of use.
 
+**TODO:**
 . Add schema registry and connect
 . Add templates with security
