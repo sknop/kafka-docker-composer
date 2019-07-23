@@ -5,6 +5,8 @@ import re
 import os.path
 import sys
 
+from configparser import ConfigParser
+
 # constants
 
 TEMPLATES_DIR="templates"
@@ -194,15 +196,32 @@ class YamlGenerator:
                 return match.group(1)
         raise Exception("Offset for placeholder {} not found".format(placeholder))
 
+def load_configfile(args, configfile):
+    parser = ConfigParser()
+    with open(configfile) as f:
+        # adding [top] section since ConfigParser needs sections, but don't want them in properties file
+        lines = '[top]\n' + f.read()
+        parser.read_string(lines)
+
+    for k,v in parser.items('top'):
+        # this is a hack
+        # need to store values as int, not string, so we look at the original default's type
+        # and cast accordingly
+
+        if type(args.__getattribute__(k)) == int:
+            args.__setattr__(k,int(v))
+        else:
+            args.__setattr__(k,v)
+
+    return args
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Kafka docker-compose Generator")
 
-    # required without defaults
-    parser.add_argument('-b', '--brokers', required=True, type=int, help="Number of Brokers")
-    parser.add_argument('-z', '--zookeepers', required=True, type=int, help="Number of ZooKeepers")
-
     # optional with defaults
+
+    parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers")
+    parser.add_argument('-z', '--zookeepers', default=1, type=int, help="Number of ZooKeepers")
     parser.add_argument('--docker-compose-template', default=DOCKER_COMPOSE_TEMPLATE,
                         help="Template file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_TEMPLATE))
     parser.add_argument('--broker-template', default=BROKER_TEMPLATE,
@@ -216,7 +235,13 @@ if __name__ == '__main__':
     parser.add_argument('--zookeeper-groups', type=int, default=1,
                         help="Number of zookeeper groups in a hierarchy")
 
+    parser.add_argument('-c', '--config', help="Properties config file, values will be overriden by command line arguments")
     args = parser.parse_args()
+
+    if args.config:
+        args = load_configfile(args, args.config)
 
     generator = YamlGenerator(args)
     generator.generate()
+
+    print("Generated {}".format(args.docker_compose_file))
