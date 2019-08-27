@@ -15,6 +15,16 @@ class TestOffset(TestYamlGenerator):
         found = YamlGenerator.find_offset(template, placeholder)
         self.assertEqual(offset, found)
 
+    def testMissingOffset(self):
+        placeholder="{{my-missing-service}}"
+        fakeholder="{{my-fake-service}}"
+        offset="   "
+        template="\n".join([ "services:", offset + fakeholder])
+
+        with self.assertRaises(Exception):
+            YamlGenerator.find_offset(template, placeholder)
+
+
 class TestNextRack(TestYamlGenerator):
     def testSimpleAdd(self):
         rack = 0
