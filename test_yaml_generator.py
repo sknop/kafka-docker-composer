@@ -1,6 +1,6 @@
 import unittest
 
-from kafka_docker_composer import YamlGenerator
+from kafka_docker_composer import YamlGenerator, OffsetNotFoundException
 
 class TestYamlGenerator(unittest.TestCase):
     def setUp(self):
@@ -21,7 +21,7 @@ class TestOffset(TestYamlGenerator):
         offset="   "
         template="\n".join([ "services:", offset + fakeholder])
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(OffsetNotFoundException):
             YamlGenerator.find_offset(template, placeholder)
 
 

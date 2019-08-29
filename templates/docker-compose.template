@@ -4,3 +4,4 @@ services:
   {{zookeeper-services}}
   {{broker-services}}
   {{schema-registry-services}}
+  {{prometheus-service}}

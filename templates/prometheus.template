@@ -1,0 +1,19 @@
+prometheus:
+  image: prom/prometheus
+  container_name: prometheus
+  depends_on:
+    {{broker-containers}}
+  volumes:
+    - $PWD/prometheus.yml:/etc/prometheus/prometheus.yml
+  ports:
+    - 9090:9090
+
+grafana:
+  image: grafana/grafana
+  container_name: grafana
+  depends_on:
+    - prometheus
+  volumes:
+    - $PWD/provisioning:/etc/grafana/provisioning
+  ports:
+    - 3000:3000
