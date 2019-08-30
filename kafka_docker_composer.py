@@ -52,7 +52,9 @@ SCHEMA_REGISTRY_PORT = "{{schema-registry-port}}"
 
 # single (prometheus)
 
-BROKER_PORTS = "{{broker-ports}}"
+JMX_BROKER_PORTS = "{{jmx-broker-ports}}"
+JMX_ZOOKEEPER_PORTS = "{{jmx-zookeeper-ports}}"
+
 #
 # services
 #
@@ -100,7 +102,7 @@ class YamlGenerator:
                 self.prometheus_config_template = f.read()
 
             try:
-                self.config_offset = YamlGenerator.find_offset(self.prometheus_config_template, BROKER_PORTS)
+                self.config_offset = YamlGenerator.find_offset(self.prometheus_config_template, JMX_BROKER_PORTS)
             except OffsetNotFoundException:
                 self.config_offset = ""
 
@@ -127,6 +129,7 @@ class YamlGenerator:
         self.broker_containers = ""
 
         self.brokers = []
+        self.zookeepers = []
 
     def generate(self):
         zookeeper_services = self.generate_zookeeper_services()
@@ -152,8 +155,6 @@ class YamlGenerator:
             yaml_file.write(output_file)
 
     def generate_zookeeper_services(self):
-        zookeepers = []
-
         if self.args.zookeeper_groups > 1:
             zookeeper_group = ""
 
@@ -179,17 +180,17 @@ class YamlGenerator:
             zookeeper[ZOOKEEPER_JMX_PORT] = "9999"
             zookeeper[ZOOKEEPER_GROUPS] = self.zookeeper_groups
 
-            zookeepers.append(zookeeper)
+            self.zookeepers.append(zookeeper)
 
         self.zookeeper_containers = "\n{}".format(self.depends_offset). \
-            join(['- ' + x[ZOOKEEPER_NAME] for x in zookeepers])
-        self.zookeeper_ports = ",".join([x[ZOOKEEPER_NAME] + ':' + x[ZOOKEEPER_PORT] for x in zookeepers])
-        self.zookeeper_internal_ports = ";".join([x[ZOOKEEPER_NAME] + ":2888:3888" for x in zookeepers])
+            join(['- ' + x[ZOOKEEPER_NAME] for x in self.zookeepers])
+        self.zookeeper_ports = ",".join([x[ZOOKEEPER_NAME] + ':' + x[ZOOKEEPER_PORT] for x in self.zookeepers])
+        self.zookeeper_internal_ports = ";".join([x[ZOOKEEPER_NAME] + ":2888:3888" for x in self.zookeepers])
 
-        for zk in zookeepers:
+        for zk in self.zookeepers:
             zk[ZOOKEEPER_INTERNAL_PORTS] = self.zookeeper_internal_ports
 
-        services = "\n".join([self.generate_one_zookeeper_service(x) for x in zookeepers])
+        services = "\n".join([self.generate_one_zookeeper_service(x) for x in self.zookeepers])
 
         return services
 
@@ -292,9 +293,13 @@ class YamlGenerator:
 
     def generate_prometheus_config(self):
         config = self.prometheus_config_template
-        broker_ports = '\n{}'.format(self.config_offset).join(["- {}:8080".format(x[BROKER_NAME]) for x in self.brokers])
+        jmx_broker_ports = '\n{}'.format(self.config_offset).\
+            join(["- {}:8080".format(x[BROKER_NAME]) for x in self.brokers])
+        jmx_zookeeper_ports = '\n{}'.format(self.config_offset).\
+            join(["- {}:8080".format(x[ZOOKEEPER_NAME]) for x in self.zookeepers])
 
-        config = config.replace(BROKER_PORTS, broker_ports)
+        config = config.replace(JMX_ZOOKEEPER_PORTS, jmx_zookeeper_ports)
+        config = config.replace(JMX_BROKER_PORTS, jmx_broker_ports)
 
         with open(PROMETHEUS_CONFIG, 'w') as f:
             f.write(config)

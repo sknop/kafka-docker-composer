@@ -13,5 +13,10 @@
     KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
     KAFKA_JMX_PORT: {{broker-jmx-port}}
     KAFKA_JMX_HOSTNAME: {{broker-name}}
+    KAFKA_RACK: {{broker-rack}}
+    KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.12.1.jar=8080:/tmp/kafka_config.yml"
   ports:
     - {{broker-port}}:{{broker-port}}
+  volumes:
+    - $PWD/jmx_prometheus_javaagent-0.12.1.jar:/tmp/jmx_prometheus_javaagent-0.12.1.jar
+    - $PWD/kafka_config.yml:/tmp/kafka_config.yml
