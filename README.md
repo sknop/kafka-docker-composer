@@ -79,6 +79,11 @@ If you want to use Prometheus and Grafana, use the option `-p`. This also genera
 configuration file from a template to reference all Kafka brokers. This template can also be overridden with the
 option `--prometheus-config-template`.
 
+Grafana is set up but no dashboards are defined. Examples dashboards can be found in the `provisioning/dashboards`
+folder and can be accessed in Grafana by clicking on the arrow in the top-left corner to the right of HOME and
+clicking on *Import dashboard* in the menu to load up a dashboard from your local directory (not the container).
+
+ 
 It is now also possible to use a config file instead of specifying all parameters by hand for 
 reproducabilty and ease of use. Specify the config file with the option `-c` or `--config`. 
 
