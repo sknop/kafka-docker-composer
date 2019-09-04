@@ -10,4 +10,8 @@
     KAFKA_JMX_PORT: {{zookeeper-jmx-port}}
     KAFKA_JMX_HOSTNAME: localhost
     ZOOKEEPER_GROUPS: {{zookeeper-groups}}
+    KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.12.1.jar=8080:/tmp/zookeeper_config.yml"
+  volumes:
+      - $PWD/jmx_prometheus_javaagent-0.12.1.jar:/tmp/jmx_prometheus_javaagent-0.12.1.jar
+      - $PWD/zookeeper_config.yml:/tmp/zookeeper_config.yml
 
