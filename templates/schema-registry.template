@@ -1,5 +1,5 @@
 {{schema-registry-name}}:
-  image: confluentinc/cp-schema-registry
+  image: confluentinc/cp-schema-registry:{{release}}
   hostname: {{schema-registry-name}}
   container_name: {{schema-registry-name}}
   depends_on:

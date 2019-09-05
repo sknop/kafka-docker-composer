@@ -1,5 +1,5 @@
 {{zookeeper-name}}:
-  image: confluentinc/cp-zookeeper:latest
+  image: confluentinc/cp-zookeeper:{{release}}
   hostname: {{zookeeper-name}}
   container_name: {{zookeeper-name}}
   environment:

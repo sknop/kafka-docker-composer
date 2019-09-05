@@ -9,6 +9,8 @@ import configparser
 
 # constants
 
+DEFAULT_RELEASE="5.3.0"
+
 TEMPLATES_DIR = "templates"
 BROKER_TEMPLATE = os.path.join(TEMPLATES_DIR, "kafka.template")
 ZOOKEEPER_TEMPLATE = os.path.join(TEMPLATES_DIR, "zookeeper.template")
@@ -20,6 +22,10 @@ DOCKER_COMPOSE_TEMPLATE = os.path.join(TEMPLATES_DIR, "docker-compose.template")
 DOCKER_COMPOSE_FILE = "docker-compose.yaml"
 
 # known variables to fill
+# common
+
+RELEASE = "{{release}}"
+
 # single (broker)
 #
 BROKER_NAME = "{{broker-name}}"
@@ -174,6 +180,7 @@ class YamlGenerator:
 
         for zk in range(1, self.args.zookeepers + 1):
             zookeeper = {}
+            zookeeper[RELEASE] = self.args.release
             zookeeper[ZOOKEEPER_NAME] = "zookeeper" + str(zk)
             zookeeper[ZOOKEEPER_ID] = str(zk)
             zookeeper[ZOOKEEPER_PORT] = "2181"
@@ -212,6 +219,7 @@ class YamlGenerator:
             internal_port = 19090 + id
 
             broker = {}
+            broker[RELEASE] = self.args.release
             broker[BROKER_NAME] = "kafka" + str(id)
             broker[BROKER_ID] = str(id)
             broker[BROKER_PORT] = str(port)
@@ -254,10 +262,12 @@ class YamlGenerator:
 
         for id in range(1, self.args.schema_registries + 1):
             port = 8080 + id
-            schema_registry = {SCHEMA_REGISTRY_NAME: "schema-registry" + str(id),
-                               KAFKA_BOOTSTRAP_SERVERS: self.bootstrap_servers,
-                               BROKER_CONTAINERS: self.broker_containers,
-                               SCHEMA_REGISTRY_PORT: str(port)
+            schema_registry = {
+                                RELEASE: self.args.release,
+                                SCHEMA_REGISTRY_NAME: "schema-registry" + str(id),
+                                KAFKA_BOOTSTRAP_SERVERS: self.bootstrap_servers,
+                                BROKER_CONTAINERS: self.broker_containers,
+                                SCHEMA_REGISTRY_PORT: str(port)
                                }
 
             schema_registries.append(schema_registry)
@@ -346,6 +356,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Kafka docker-compose Generator")
 
     # optional with defaults
+
+    parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help="Docker images release")
 
     parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers [1]")
     parser.add_argument('-z', '--zookeepers', default=1, type=int, help="Number of ZooKeepers [1]")

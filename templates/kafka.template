@@ -1,5 +1,5 @@
 {{broker-name}}:
-  image: confluentinc/cp-kafka:latest
+  image: confluentinc/cp-kafka:{{release}}
   hostname: {{broker-name}}
   container_name: {{broker-name}}
   depends_on:
