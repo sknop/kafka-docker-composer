@@ -18,5 +18,5 @@
   ports:
     - {{broker-port}}:{{broker-port}}
   volumes:
-    - $PWD/jmx_prometheus_javaagent-0.12.1.jar:/tmp/jmx_prometheus_javaagent-0.12.1.jar
-    - $PWD/kafka_config.yml:/tmp/kafka_config.yml
+    - $PWD/volumes/jmx_prometheus_javaagent-0.12.1.jar:/tmp/jmx_prometheus_javaagent-0.12.1.jar
+    - $PWD/volumes/kafka_config.yml:/tmp/kafka_config.yml

@@ -17,7 +17,7 @@ ZOOKEEPER_TEMPLATE = os.path.join(TEMPLATES_DIR, "zookeeper.template")
 SCHEMA_REGISTRY_TEMPLATE = os.path.join(TEMPLATES_DIR, "schema-registry.template")
 PROMETHEUS_TEMPLATE = os.path.join(TEMPLATES_DIR, "prometheus.template")
 PROMETHEUS_CONFIG_TEMPLATE = os.path.join(TEMPLATES_DIR, "prometheus.yml.template")
-PROMETHEUS_CONFIG = "prometheus.yml"  # TODO make configurable?
+PROMETHEUS_CONFIG = os.path.join("volumes","prometheus.yml")  # TODO make configurable?
 DOCKER_COMPOSE_TEMPLATE = os.path.join(TEMPLATES_DIR, "docker-compose.template")
 DOCKER_COMPOSE_FILE = "docker-compose.yaml"
 
