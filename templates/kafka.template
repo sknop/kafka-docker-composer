@@ -7,10 +7,11 @@
   environment:
     KAFKA_BROKER_ID: {{broker-id}}
     KAFKA_ZOOKEEPER_CONNECT: {{zookeeper-ports}}
-    KAFKA_LISTENERS: INTERNAL://{{broker-port-internal}}, EXTERNAL://{{broker-port-external}}
-    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:{{broker-internal-protocol}},EXTERNAL:{{broker-external-protocol}}
-    KAFKA_ADVERTISED_LISTENERS: INTERNAL://{{broker-advertised-port-internal}}, EXTERNAL://{{broker-advertised-port-external}}
-    KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+    KAFKA_LISTENERS: PLAINTEXT://{{broker-port-internal}}, EXTERNAL://{{broker-port-external}}
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:{{broker-internal-protocol}},EXTERNAL:{{broker-external-protocol}}
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://{{broker-advertised-port-internal}}, EXTERNAL://{{broker-advertised-port-external}}
+    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     KAFKA_JMX_PORT: {{broker-jmx-port}}
     KAFKA_JMX_HOSTNAME: {{broker-name}}
     KAFKA_RACK: {{broker-rack}}

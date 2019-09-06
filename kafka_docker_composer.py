@@ -18,6 +18,7 @@ SCHEMA_REGISTRY_TEMPLATE = os.path.join(TEMPLATES_DIR, "schema-registry.template
 PROMETHEUS_TEMPLATE = os.path.join(TEMPLATES_DIR, "prometheus.template")
 PROMETHEUS_CONFIG_TEMPLATE = os.path.join(TEMPLATES_DIR, "prometheus.yml.template")
 PROMETHEUS_CONFIG = os.path.join("volumes","prometheus.yml")  # TODO make configurable?
+CONTROL_CENTER_TEMPLATE = os.path.join(TEMPLATES_DIR, "control-center.template")
 DOCKER_COMPOSE_TEMPLATE = os.path.join(TEMPLATES_DIR, "docker-compose.template")
 DOCKER_COMPOSE_FILE = "docker-compose.yaml"
 
@@ -68,12 +69,14 @@ ZOOKEEPER_SERVICES = "{{zookeeper-services}}"
 BROKER_SERVICES = "{{broker-services}}"
 SCHEMA_REGISTRY_SERVICES = "{{schema-registry-services}}"
 PROMETHEUS_SERVICE = "{{prometheus-service}}"
+CONTROL_CENTER_SERVICE = "{{control-center-service}}"
 
 #
 # multiple
 #
 ZOOKEEPER_CONTAINERS = "{{zookeeper-containers}}"  # array of dependencies
 BROKER_CONTAINERS = "{{broker-containers}}"  # array of dependencies
+SCHEMA_CONTAINERS = "{{schema-registry-containers}}" # array of dependencies (for control center)
 ZOOKEEPER_PORTS = "{{zookeeper-ports}}"  # host:port[,host:port]*
 ZOOKEEPER_INTERNAL_PORTS = "{{zookeeper-internal-ports}}"  # host:2888:3888[;host:2888:3888]*
 KAFKA_BOOTSTRAP_SERVERS = "{{kafka-bootstrap-servers}}"
@@ -126,6 +129,15 @@ class YamlGenerator:
         except OffsetNotFoundException:
             self.prometheus_offset = ""
 
+        if args.control_center:
+            with open(self.args.control_center_template) as f:
+                self.control_center_template = f.read()
+
+            try:  # might not exist, need to catch Exception
+                self.control_center_offset = YamlGenerator.find_offset(self.master_template, CONTROL_CENTER_SERVICE)
+            except OffsetNotFoundException:
+                self.control_center_offset = ""
+
         self.zookeeper_containers = ""
         self.zookeeper_ports = ""
         self.zookeeper_internal_ports = ""
@@ -133,6 +145,7 @@ class YamlGenerator:
 
         self.bootstrap_servers = ""
         self.broker_containers = ""
+        self.schema_registry_containers = ""
 
         self.brokers = []
         self.zookeepers = []
@@ -142,6 +155,7 @@ class YamlGenerator:
         broker_services = self.generate_broker_services()
         schema_registry_services = self.generate_schema_registry_service()
         prometheus_service = self.generate_prometheus_service()
+        control_center_service = self.generate_control_center_service()
 
         if self.args.prometheus:
             self.generate_prometheus_config()
@@ -150,12 +164,14 @@ class YamlGenerator:
         broker_placeholder = self.broker_offset + BROKER_SERVICES
         schema_registry_placeholder = self.schema_registry_offset + SCHEMA_REGISTRY_SERVICES
         prometheus_placeholder = self.prometheus_offset + PROMETHEUS_SERVICE
+        control_center_placeholder = self.control_center_offset + CONTROL_CENTER_SERVICE
 
         output_file = self.master_template
         output_file = output_file.replace(zookeeper_placeholder, zookeeper_services)
         output_file = output_file.replace(broker_placeholder, broker_services)
         output_file = output_file.replace(schema_registry_placeholder, schema_registry_services)
         output_file = output_file.replace(prometheus_placeholder, prometheus_service)
+        output_file = output_file.replace(control_center_placeholder, control_center_service)
 
         with open(self.args.docker_compose_file, "w") as yaml_file:
             yaml_file.write(output_file)
@@ -272,6 +288,9 @@ class YamlGenerator:
 
             schema_registries.append(schema_registry)
 
+        self.schema_registry_containers = "\n{}".format(self.depends_offset). \
+            join(['- ' + x[SCHEMA_REGISTRY_NAME] for x in schema_registries])
+
         services = "\n".join([self.generate_one_schema_registry_service(x) for x in schema_registries])
 
         return services
@@ -285,6 +304,29 @@ class YamlGenerator:
         result = [self.schema_registry_offset + line for line in lines]
 
         return "\n".join(result)
+
+    def generate_control_center_service(self):
+        if self.args.control_center:
+            service = self.control_center_template
+
+            control_center = {
+                RELEASE: self.args.release,
+                ZOOKEEPER_CONTAINERS: self.zookeeper_containers,
+                BROKER_CONTAINERS: self.broker_containers,
+                SCHEMA_CONTAINERS: self.schema_registry_containers,
+                KAFKA_BOOTSTRAP_SERVERS: ",".join([x[BROKER_PORT_INTERNAL] for x in self.brokers]),
+                ZOOKEEPER_PORTS: self.zookeeper_ports
+            }
+
+            for key,value in control_center.items():
+                service = service.replace(key, value)
+
+            lines = service.split('\n')
+            result = '\n'.join([self.control_center_offset + line for line in lines])
+
+            return result
+        else:
+            return ""
 
     def generate_prometheus_service(self):
         if self.args.prometheus:
@@ -364,6 +406,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--schema-registries', default=0, type=int,
                         help="Number of Schema Registry instances [0]")
     parser.add_argument('-p', '--prometheus', default=False, action='store_true', help="Include Prometheus [False]")
+    parser.add_argument('--control-center', default=False, action='store_true', help="Include Confluent Control Center [False]")
 
     parser.add_argument('--docker-compose-template', default=DOCKER_COMPOSE_TEMPLATE,
                         help="Template file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_TEMPLATE))
@@ -373,6 +416,8 @@ if __name__ == '__main__':
                         help="Template file for zookeepers, default \"{}\"".format(ZOOKEEPER_TEMPLATE))
     parser.add_argument('--schema-registry-template', default=SCHEMA_REGISTRY_TEMPLATE,
                         help="Template file for schema registry, default \"{}\"".format(SCHEMA_REGISTRY_TEMPLATE))
+    parser.add_argument('--control-center-template', default=CONTROL_CENTER_TEMPLATE,
+                        help="Template file for control center, default \"{}\"".format(CONTROL_CENTER_TEMPLATE))
     parser.add_argument('--prometheus-template', default=PROMETHEUS_TEMPLATE,
                         help="Template file for prometheus, default \"{}\"".format(PROMETHEUS_TEMPLATE))
     parser.add_argument('--prometheus-config-template', default=PROMETHEUS_CONFIG_TEMPLATE,
