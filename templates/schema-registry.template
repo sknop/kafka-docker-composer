@@ -4,6 +4,7 @@
   container_name: {{schema-registry-name}}
   depends_on:
     {{broker-containers}}
+    {{previous-schema-registry-containers}}
   ports:
     - "{{schema-registry-port}}:{{schema-registry-port}}"
   environment:

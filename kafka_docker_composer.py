@@ -56,6 +56,7 @@ ZOOKEEPER_GROUPS = "{{zookeeper-groups}}"
 #
 SCHEMA_REGISTRY_NAME = "{{schema-registry-name}}"
 SCHEMA_REGISTRY_PORT = "{{schema-registry-port}}"
+PREVIOUS_SCHEMA_REGISTRY_CONTAINERS = "{{previous-schema-registry-containers}}"
 
 # single (prometheus)
 
@@ -278,12 +279,18 @@ class YamlGenerator:
 
         for id in range(1, self.args.schema_registries + 1):
             port = 8080 + id
+
+            # Collect all previous schema-registry entries to set up a hierarchy
+            previous_containers = "\n{}".format(self.depends_offset). \
+                join(['- ' + x[SCHEMA_REGISTRY_NAME] for x in schema_registries])
+
             schema_registry = {
                                 RELEASE: self.args.release,
                                 SCHEMA_REGISTRY_NAME: "schema-registry" + str(id),
                                 KAFKA_BOOTSTRAP_SERVERS: self.bootstrap_servers,
                                 BROKER_CONTAINERS: self.broker_containers,
-                                SCHEMA_REGISTRY_PORT: str(port)
+                                SCHEMA_REGISTRY_PORT: str(port),
+                                PREVIOUS_SCHEMA_REGISTRY_CONTAINERS: previous_containers
                                }
 
             schema_registries.append(schema_registry)
