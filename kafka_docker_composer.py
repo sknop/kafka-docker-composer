@@ -134,10 +134,10 @@ class YamlGenerator:
             with open(self.args.control_center_template) as f:
                 self.control_center_template = f.read()
 
-            try:  # might not exist, need to catch Exception
-                self.control_center_offset = YamlGenerator.find_offset(self.master_template, CONTROL_CENTER_SERVICE)
-            except OffsetNotFoundException:
-                self.control_center_offset = ""
+        try:  # might not exist, need to catch Exception
+            self.control_center_offset = YamlGenerator.find_offset(self.master_template, CONTROL_CENTER_SERVICE)
+        except OffsetNotFoundException:
+            self.control_center_offset = ""
 
         self.zookeeper_containers = ""
         self.zookeeper_ports = ""
