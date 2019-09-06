@@ -4,13 +4,13 @@ Python script to generate a docker-compose.yaml file based on templates and para
 **Usage:**
 
 ```
-python3 kafka_docker_composer.py -h
-usage: kafka_docker_composer.py [-h] [-b BROKERS] [-z ZOOKEEPERS]
-                                [-s SCHEMA_REGISTRIES] [-p]
+usage: kafka_docker_composer.py [-h] [-r RELEASE] [-b BROKERS] [-z ZOOKEEPERS]
+                                [-s SCHEMA_REGISTRIES] [-p] [--control-center]
                                 [--docker-compose-template DOCKER_COMPOSE_TEMPLATE]
                                 [--broker-template BROKER_TEMPLATE]
                                 [--zookeeper-template ZOOKEEPER_TEMPLATE]
                                 [--schema-registry-template SCHEMA_REGISTRY_TEMPLATE]
+                                [--control-center-template CONTROL_CENTER_TEMPLATE]
                                 [--prometheus-template PROMETHEUS_TEMPLATE]
                                 [--prometheus-config-template PROMETHEUS_CONFIG_TEMPLATE]
                                 [--docker-compose-file DOCKER_COMPOSE_FILE]
@@ -24,6 +24,8 @@ Kafka docker-compose Generator
 
 optional arguments:
   -h, --help            show this help message and exit
+  -r RELEASE, --release RELEASE
+                        Docker images release
   -b BROKERS, --brokers BROKERS
                         Number of Brokers [1]
   -z ZOOKEEPERS, --zookeepers ZOOKEEPERS
@@ -31,6 +33,7 @@ optional arguments:
   -s SCHEMA_REGISTRIES, --schema-registries SCHEMA_REGISTRIES
                         Number of Schema Registry instances [0]
   -p, --prometheus      Include Prometheus [False]
+  --control-center      Include Confluent Control Center [False]
   --docker-compose-template DOCKER_COMPOSE_TEMPLATE
                         Template file for docker-compose, default
                         "templates/docker-compose.template"
@@ -43,6 +46,9 @@ optional arguments:
   --schema-registry-template SCHEMA_REGISTRY_TEMPLATE
                         Template file for schema registry, default
                         "templates/schema-registry.template"
+  --control-center-template CONTROL_CENTER_TEMPLATE
+                        Template file for control center, default
+                        "templates/control-center.template"
   --prometheus-template PROMETHEUS_TEMPLATE
                         Template file for prometheus, default
                         "templates/prometheus.template"
