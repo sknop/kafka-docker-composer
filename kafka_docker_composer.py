@@ -48,6 +48,7 @@ BROKER_EXTERNAL_PROTOCOL = "{{broker-external-protocol}}"
 ZOOKEEPER_NAME = "{{zookeeper-name}}"
 ZOOKEEPER_ID = "{{zookeeper-id}}"
 ZOOKEEPER_PORT = "{{zookeeper-port}}"
+ZOOKEEPER_EXTERNAL_PORT = "{{zookeeper-external-port}}"
 ZOOKEEPER_JMX_PORT = "{{zookeeper-jmx-port}}"
 ZOOKEEPER_GROUPS = "{{zookeeper-groups}}"
 
@@ -196,11 +197,14 @@ class YamlGenerator:
             self.zookeeper_groups = ";".join(groups)
 
         for zk in range(1, self.args.zookeepers + 1):
+            zookeeper_external_port = 2180 + zk
+
             zookeeper = {}
             zookeeper[RELEASE] = self.args.release
             zookeeper[ZOOKEEPER_NAME] = "zookeeper" + str(zk)
             zookeeper[ZOOKEEPER_ID] = str(zk)
             zookeeper[ZOOKEEPER_PORT] = "2181"
+            zookeeper[ZOOKEEPER_EXTERNAL_PORT] = str(zookeeper_external_port)
             zookeeper[ZOOKEEPER_JMX_PORT] = "9999"
             zookeeper[ZOOKEEPER_GROUPS] = self.zookeeper_groups
 
