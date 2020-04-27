@@ -34,6 +34,38 @@ rules:
   name: kafka_$1_$2_$3_total
   type: COUNTER
 
+  # Generic per-second OneMinuteRate with 0-2 key/value pairs
+- pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*, (.+)=(.+), (.+)=(.+)><>OneMinuteRate
+  name: kafka_$1_$2_$3_oneminuterate
+  type: GAUGE
+  labels:
+    "$4": "$5"
+    "$6": "$7"
+- pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*, (.+)=(.+)><>OneMinuteRate
+  name: kafka_$1_$2_$3_oneminuterate
+  type: GAUGE
+  labels:
+    "$4": "$5"
+- pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*><>OneMinuteRate
+  name: kafka_$1_$2_$3_oneminuterate
+  type: GAUGE
+
+  # Generic per-second Mean with 0-2 key/value pairs
+- pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*, (.+)=(.+), (.+)=(.+)><>Mean
+  name: kafka_$1_$2_$3_mean
+  type: GAUGE
+  labels:
+    "$4": "$5"
+    "$6": "$7"
+- pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*, (.+)=(.+)><>Mean
+  name: kafka_$1_$2_$3_mean
+  type: GAUGE
+  labels:
+    "$4": "$5"
+- pattern: kafka.(\w+)<type=(.+), name=(.+)PerSec\w*><>Mean
+  name: kafka_$1_$2_$3_mean
+  type: GAUGE
+
 # Generic gauges with 0-2 key/value pairs
 - pattern: kafka.(\w+)<type=(.+), name=(.+), (.+)=(.+), (.+)=(.+)><>Value
   name: kafka_$1_$2_$3
