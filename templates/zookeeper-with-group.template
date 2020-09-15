@@ -14,4 +14,4 @@
   volumes:
       - $PWD/volumes/jmx_prometheus_javaagent-0.12.1.jar:/tmp/jmx_prometheus_javaagent-0.12.1.jar
       - $PWD/volumes/zookeeper_config.yml:/tmp/zookeeper_config.yml
-
+      - $PWD/volumes/jline-2.12.1.jar:/usr/share/java/kafka/jline-2.12.1.jar
