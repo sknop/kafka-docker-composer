@@ -15,5 +15,6 @@ grafana:
     - prometheus
   volumes:
     - $PWD/volumes/provisioning:/etc/grafana/provisioning
+    - $PWD/volumes/dashboards:/var/lib/grafana/dashboards
   ports:
     - 3000:3000

@@ -11,13 +11,11 @@
     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:{{broker-internal-protocol}},EXTERNAL:{{broker-external-protocol}}
     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://{{broker-advertised-port-internal}}, EXTERNAL://{{broker-advertised-port-external}}
     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-    KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-    CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: {{broker-port-internal}}
     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     KAFKA_JMX_PORT: {{broker-jmx-port}}
     KAFKA_JMX_HOSTNAME: {{broker-name}}
     KAFKA_BROKER_RACK: {{broker-rack}}
-    KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.12.1.jar=8090:/tmp/kafka_config.yml"
+    KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.12.1.jar=8091:/tmp/kafka_config.yml"
   ports:
     - {{broker-port}}:{{broker-port}}
   volumes:

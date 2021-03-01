@@ -360,9 +360,9 @@ class YamlGenerator:
     def generate_prometheus_config(self):
         config = self.prometheus_config_template
         jmx_broker_ports = '\n{}'.format(self.config_offset).\
-            join(["- {}:8090".format(x[BROKER_NAME]) for x in self.brokers])
+            join(["- {}:8091".format(x[BROKER_NAME]) for x in self.brokers])
         jmx_zookeeper_ports = '\n{}'.format(self.config_offset).\
-            join(["- {}:8090".format(x[ZOOKEEPER_NAME]) for x in self.zookeepers])
+            join(["- {}:8091".format(x[ZOOKEEPER_NAME]) for x in self.zookeepers])
 
         config = config.replace(JMX_ZOOKEEPER_PORTS, jmx_zookeeper_ports)
         config = config.replace(JMX_BROKER_PORTS, jmx_broker_ports)
