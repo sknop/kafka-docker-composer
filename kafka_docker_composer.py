@@ -21,6 +21,7 @@ PROMETHEUS_CONFIG = os.path.join("volumes","prometheus.yml")  # TODO make config
 CONTROL_CENTER_TEMPLATE = os.path.join(TEMPLATES_DIR, "control-center.template")
 DOCKER_COMPOSE_TEMPLATE = os.path.join(TEMPLATES_DIR, "docker-compose.template")
 DOCKER_COMPOSE_FILE = "docker-compose.yaml"
+KAFKA_CONTAINER = "cp-server"
 
 # known variables to fill
 # common
@@ -29,6 +30,7 @@ RELEASE = "{{release}}"
 
 # single (broker)
 #
+BROKER_CONTAINER = "{{kafka-container}}"
 BROKER_NAME = "{{broker-name}}"
 BROKER_ID = "{{broker-id}}"
 BROKER_PORT = "{{broker-port}}"
@@ -251,9 +253,10 @@ class YamlGenerator:
             broker[BROKER_JMX_PORT] = "9999"
             broker[ZOOKEEPER_CONTAINERS] = self.zookeeper_containers
             broker[ZOOKEEPER_PORTS] = self.zookeeper_ports
-            broker[BROKER_RACK] = str(rack)
+            broker[BROKER_RACK] = f"rack-{rack}"
             broker[BROKER_INTERNAL_PROTOCOL] = self.args.broker_internal_protocol
             broker[BROKER_EXTERNAL_PROTOCOL] = self.args.broker_external_protocol
+            broker[BROKER_CONTAINER] = self.args.kafka_container
 
             self.brokers.append(broker)
 
@@ -419,6 +422,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--prometheus', default=False, action='store_true', help="Include Prometheus [False]")
     parser.add_argument('--control-center', default=False, action='store_true', help="Include Confluent Control Center [False]")
 
+    parser.add_argument('--kafka-container', default=KAFKA_CONTAINER,
+                        help="Container used for Kafka, default \"{}\"".format(KAFKA_CONTAINER))
     parser.add_argument('--docker-compose-template', default=DOCKER_COMPOSE_TEMPLATE,
                         help="Template file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_TEMPLATE))
     parser.add_argument('--broker-template', default=BROKER_TEMPLATE,
