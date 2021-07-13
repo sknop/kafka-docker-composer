@@ -265,9 +265,12 @@ class YamlGenerator:
         self.broker_containers = "\n{}".format(self.depends_offset). \
             join(['- ' + x[BROKER_NAME] for x in self.brokers])
 
+        self.bootstrap_servers = ",".join(["PLAINTEXT://" + x[BROKER_PORT_INTERNAL] for x in self.brokers])
+        for b in self.brokers:
+            b[KAFKA_BOOTSTRAP_SERVERS] = ",".join([x[BROKER_PORT_INTERNAL] for x in self.brokers])
+
         services = "\n".join([self.generate_one_broker_service(x) for x in self.brokers])
 
-        self.bootstrap_servers = ",".join(["PLAINTEXT://" + x[BROKER_PORT_INTERNAL] for x in self.brokers])
 
         return services
 

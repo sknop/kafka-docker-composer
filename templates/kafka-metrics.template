@@ -1,0 +1,25 @@
+{{broker-name}}:
+  image: confluentinc/{{kafka-container}}:{{release}}
+  hostname: {{broker-name}}
+  container_name: {{broker-name}}
+  depends_on:
+    {{zookeeper-containers}}
+  environment:
+    KAFKA_BROKER_ID: {{broker-id}}
+    KAFKA_ZOOKEEPER_CONNECT: {{zookeeper-ports}}
+    KAFKA_LISTENERS: PLAINTEXT://{{broker-port-internal}}, EXTERNAL://{{broker-port-external}}
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:{{broker-internal-protocol}},EXTERNAL:{{broker-external-protocol}}
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://{{broker-advertised-port-internal}}, EXTERNAL://{{broker-advertised-port-external}}
+    KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    KAFKA_JMX_PORT: {{broker-jmx-port}}
+    KAFKA_JMX_HOSTNAME: {{broker-name}}
+    KAFKA_BROKER_RACK: {{broker-rack}}
+    KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.12.1.jar=8091:/tmp/kafka_config.yml"
+    KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: {{kafka-bootstrap-servers}}
+    KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+  ports:
+    - {{broker-port}}:{{broker-port}}
+  volumes:
+    - $PWD/volumes/jmx_prometheus_javaagent-0.12.1.jar:/tmp/jmx_prometheus_javaagent-0.12.1.jar
+    - $PWD/volumes/kafka_config.yml:/tmp/kafka_config.yml
