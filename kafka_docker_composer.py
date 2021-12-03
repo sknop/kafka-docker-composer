@@ -9,7 +9,7 @@ import configparser
 
 # constants
 
-DEFAULT_RELEASE="5.5.0"
+DEFAULT_RELEASE="6.2.1"
 
 TEMPLATES_DIR = "templates"
 BROKER_TEMPLATE = os.path.join(TEMPLATES_DIR, "kafka.template")
