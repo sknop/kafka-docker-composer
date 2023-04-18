@@ -7,7 +7,8 @@ import configparser
 
 # constants
 
-DEFAULT_RELEASE="6.2.1"
+DEFAULT_RELEASE = "7.3.2"
+JMX_PROMETHEUS_JAVA_AGENT = "0.18.0"
 
 TEMPLATES_DIR = "templates"
 BROKER_TEMPLATE = os.path.join(TEMPLATES_DIR, "kafka.template")
@@ -25,6 +26,7 @@ KAFKA_CONTAINER = "cp-server"
 # common
 
 RELEASE = "{{release}}"
+JMX_PROMETHEUS = "{{jmx_prometheus}}"
 
 # single (broker)
 #
@@ -201,6 +203,7 @@ class YamlGenerator:
 
             zookeeper = {}
             zookeeper[RELEASE] = self.args.release
+            zookeeper[JMX_PROMETHEUS] = JMX_PROMETHEUS_JAVA_AGENT
             zookeeper[ZOOKEEPER_NAME] = "zookeeper" + str(zk)
             zookeeper[ZOOKEEPER_ID] = str(zk)
             zookeeper[ZOOKEEPER_PORT] = "2181"
@@ -241,6 +244,7 @@ class YamlGenerator:
 
             broker = {}
             broker[RELEASE] = self.args.release
+            broker[JMX_PROMETHEUS] = JMX_PROMETHEUS_JAVA_AGENT
             broker[BROKER_NAME] = "kafka" + str(id)
             broker[BROKER_ID] = str(id)
             broker[BROKER_PORT] = str(port)
@@ -268,7 +272,6 @@ class YamlGenerator:
             b[KAFKA_BOOTSTRAP_SERVERS] = ",".join([x[BROKER_PORT_INTERNAL] for x in self.brokers])
 
         services = "\n".join([self.generate_one_broker_service(x) for x in self.brokers])
-
 
         return services
 
