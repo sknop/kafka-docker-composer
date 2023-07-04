@@ -1,6 +1,4 @@
 import argparse
-import re
-import os.path
 import sys
 
 import configparser
