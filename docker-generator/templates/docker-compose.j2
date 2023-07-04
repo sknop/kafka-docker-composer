@@ -1,0 +1,30 @@
+---
+version: "{{docker_compose_version}}"
+services:
+{% for service in services %}
+    {{ service.name }}:
+        image: {{ service.image }}
+        hostname: {{ service.hostname }}
+        container_name: {{ service.container_name}}
+        {% if service.depends_on is defined %}
+        depends_on:
+        {% for depends in service.depends_on %}
+            - {{ depends }}
+        {%  endfor %}
+        {% endif +%}
+        environment:
+        {% for key,value in service.environment.items() %}
+            {{ key }}: {{ value }}
+        {% endfor %}
+        {% if service.ports is defined %}
+        ports:
+        {% for host,container in service.ports.items() %}
+            - {{host}}:{{container}}
+        {% endfor %}
+        {% endif %}
+        volumes:
+        {% for volume in service.volumes %}
+            - {{ volume }}
+        {% endfor %}
+
+{% endfor %}
