@@ -480,7 +480,7 @@ if __name__ == '__main__':
 
     # optional with defaults
 
-    parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help="Docker images release")
+    parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
 
     parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers [1]")
     parser.add_argument('-z', '--zookeepers', default=0, type=int,
@@ -495,20 +495,15 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--prometheus', default=False, action='store_true', help="Include Prometheus [False]")
 
     parser.add_argument('--kafka-container', default=KAFKA_CONTAINER,
-                        help="Container used for Kafka, default \"{}\"".format(KAFKA_CONTAINER))
-
-    parser.add_argument('--broker-internal-protocol', default="PLAINTEXT",
-                        help="Internal protocol used (default PLAINTEXT)")
-    parser.add_argument('--broker-external-protocol', default="PLAINTEXT",
-                        help="External protocol used (default PLAINTEXT)")
+                        help=f"Container used for Kafka, default [{KAFKA_CONTAINER}]")
 
     parser.add_argument('--racks', type=int, default=1,
-                        help="Number of racks among which the brokers will be distributed evenly")
+                        help="Number of racks among which the brokers will be distributed evenly [1]")
     parser.add_argument('--zookeeper-groups', type=int, default=1,
-                        help="Number of zookeeper groups in a hierarchy")
+                        help="Number of zookeeper groups in a hierarchy [1]")
 
     parser.add_argument('--docker-compose-file', default=DOCKER_COMPOSE_FILE,
-                        help="Output file for docker-compose, default \"{}\"".format(DOCKER_COMPOSE_FILE))
+                        help=f"Output file for docker-compose, default [{DOCKER_COMPOSE_FILE}]")
 
     parser.add_argument('--config',
                         help="Properties config file, values will be overriden by command line arguments")

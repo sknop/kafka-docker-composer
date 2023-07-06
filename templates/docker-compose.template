@@ -1,8 +1,0 @@
----
-version: '3'
-services:
-  {{zookeeper-services}}
-  {{broker-services}}
-  {{schema-registry-services}}
-  {{prometheus-service}}
-  {{control-center-service}}
