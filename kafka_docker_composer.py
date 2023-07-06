@@ -9,8 +9,11 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 DEFAULT_RELEASE = "7.4.0"
 JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.18.0"
-JMX_JAR_FILE = "jmx_prometheus_javaagent-" + JMX_PROMETHEUS_JAVA_AGENT_VERSION + ".jar"
-JMX_PROMETHEUS_JAVA_AGENT = "-javaagent:/tmp/" + JMX_JAR_FILE + "=8091:/tmp/"
+JMX_PORT = "8091"
+JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
+JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"
+JMX_EXTERNAL_PORT = 10000
+JMX_AGENT_PORT = 10100
 
 LOCAL_VOLUMES = "$PWD/volumes/"
 
@@ -21,20 +24,19 @@ ZOOKEEPER_JMX_CONFIG = "zookeeper_config.yml"
 ZOOKEEPER_PORT = "2181"
 
 BROKER_JMX_CONFIG = "kafka_config.yml"
+SCHEMA_REGISTRY_JMX_CONFIG = "schema-registry.yml"
 
 
-class YamlGenerator:
+class DockerComposeGenerator:
     def __init__(self, arguments):
         self.args = arguments
 
-        env = Environment(
+        self.env = Environment(
             loader=PackageLoader("docker-generator"),
             autoescape=select_autoescape(),
             trim_blocks=True,
             lstrip_blocks=True
         )
-
-        self.template = env.get_template('docker-compose.j2')
 
         self.zookeepers = ""
         self.controllers = ""
@@ -46,9 +48,25 @@ class YamlGenerator:
         self.broker_containers = []
         self.schema_registry_containers = []
 
-    def generate(self):
-        services = []
+        self.prometheus_jobs = []
 
+        self.external_port_counter = JMX_EXTERNAL_PORT
+        self.agent_port_counter = JMX_AGENT_PORT
+
+    def next_external_port(self):
+        self.external_port_counter += 1
+        return self.external_port_counter
+
+    def next_agent_port(self):
+        self.agent_port_counter += 1
+        return self.agent_port_counter
+
+    def generate(self):
+        self.generate_services()
+        self.generate_prometheus()
+
+    def generate_services(self):
+        services = []
         services += self.generate_zookeeper_services()
         services += self.generate_controller_services()
         services += self.generate_broker_services()
@@ -56,18 +74,79 @@ class YamlGenerator:
         services += self.generate_control_center_service()
         services += self.generate_prometheus_service()
         services += self.generate_grafana_service()
-
         variables = {
             "docker_compose_version": "3.8",
             "services": services
         }
-        result = self.template.render(variables)
+
+        template = self.env.get_template('docker-compose.j2')
+        result = template.render(variables)
 
         with open(self.args.docker_compose_file, "w") as yaml_file:
             yaml_file.write(result)
 
+    def generate_prometheus(self):
+        template = self.env.get_template('prometheus.j2')
+
+        variables = {
+            "jobs": self.prometheus_jobs
+        }
+        result = template.render(variables)
+
+        with open('volumes/prometheus.yml', "w") as yaml_file:
+            yaml_file.write(result)
+
+    @staticmethod
+    def create_name(basename, counter):
+        return f"{basename}-{counter}"
+
     def generate_controller_services(self):
+        rack = 0
+
         controllers = []
+        bootstrap_servers = []
+
+        for controller_id in range(1, self.args.controllers + 1):
+            port = 9060 + controller_id
+            internal_port = 19060 + controller_id
+
+            controller = {}
+
+            name = self.create_name("controller", controller_id)
+            controller["name"] = name
+            controller["hostname"] = name
+            controller["container_name"] = name
+
+            controller["image"] = f"confluentinc/{KAFKA_CONTAINER}:" + self.args.release
+
+            controller["environment"] = {
+                "KAFKA_NODE_ID": controller_id,
+                "KAFKA_LISTENERS": f"CONTROLLER://{name}:{internal_port}, EXTERNAL://{name}:{port}",
+                "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT",
+                "KAFKA_ADVERTISED_LISTENERS": f"CONTROLLER://{name}:{internal_port}, EXTERNAL://localhost:{port}",
+                "KAFKA_INTER_BROKER_LISTENER_NAME": "PLAINTEXT",
+                "KAFKA_JMX_PORT": 9999,
+                "KAFKA_JMX_HOSTNAME": name,
+                "KAFKA_BROKER_RACK": f"rack-{rack}",
+                "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
+            }
+
+            controller["ports"] = {
+                port: port
+            }
+
+            controller["volumes"] = [
+                LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
+                LOCAL_VOLUMES + BROKER_JMX_CONFIG + ":/tmp/" + BROKER_JMX_CONFIG
+            ]
+
+            controllers.append(controller)
+            bootstrap_servers.append(f"{name}:{internal_port}")
+
+            rack = DockerComposeGenerator.next_rack(rack, self.args.racks)
+
+        self.bootstrap_servers = ",".join(bootstrap_servers)
+        self.broker_containers = [b["name"] for b in controllers]
 
         return controllers
 
@@ -96,25 +175,36 @@ class YamlGenerator:
         zookeepers = []
         zookeeper_servers = []
 
+        targets = []
+        job = {
+            "name": "zookeeper",
+            "scrape_interval": "5s",
+            "targets": targets
+        }
+
         for zk in range(1, self.args.zookeepers + 1):
             zookeeper_external_port = 2180 + zk
 
             zookeeper = {}
 
-            name = "zookeeper" + str(zk)
+            name = self.create_name("zookeeper", zk)
             zookeeper["name"] = name
             zookeeper["hostname"] = name
             zookeeper["container_name"] = name
+
+            targets.append(f"{name}:{JMX_PORT}")
 
             zookeeper_servers.append(name + ":2888:3888")
 
             zookeeper["image"] = "confluentinc/cp-zookeeper:" + self.args.release
 
+            jmx_port = self.next_external_port()
+
             environment = {
                 "ZOOKEEPER_SERVER_ID": zk,
                 "ZOOKEEPER_CLIENT_PORT": ZOOKEEPER_PORT,
                 "ZOOKEEPER_TICK_TIME": 2000,
-                "KAFKA_JMX_PORT": 9999,
+                "KAFKA_JMX_PORT": jmx_port,
                 "KAFKA_JMX_HOSTNAME": "localhost",
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + ZOOKEEPER_JMX_CONFIG
             }
@@ -131,7 +221,9 @@ class YamlGenerator:
             ]
 
             zookeeper["ports"] = {
-                zookeeper_external_port: ZOOKEEPER_PORT
+                zookeeper_external_port: ZOOKEEPER_PORT,
+                jmx_port: jmx_port,
+                self.next_agent_port(): JMX_PORT
             }
 
             zookeepers.append(zookeeper)
@@ -144,6 +236,9 @@ class YamlGenerator:
 
         self.zookeeper_containers = [z["name"] for z in zookeepers]
 
+        if self.args.zookeepers > 0:
+            self.prometheus_jobs.append(job)
+
         return zookeepers
 
     def generate_broker_services(self):
@@ -152,20 +247,32 @@ class YamlGenerator:
         brokers = []
         bootstrap_servers = []
 
+        targets = []
+        job = {
+            "name": "kafka-broker",
+            "scrape_interval": "5s",
+            "targets": targets
+        }
+        self.prometheus_jobs.append(job)
+
         for broker_id in range(1, self.args.brokers + 1):
             port = 9090 + broker_id
             internal_port = 19090 + broker_id
 
             broker = {}
 
-            name = "kafka" + str(broker_id)
+            name = self.create_name("kafka", broker_id)
             broker["name"] = name
             broker["hostname"] = name
             broker["container_name"] = name
 
+            targets.append(f"{name}:{JMX_PORT}")
+
             broker["image"] = f"confluentinc/{KAFKA_CONTAINER}:" + self.args.release
 
             broker["depends_on"] = self.zookeeper_containers
+
+            jmx_port = self.next_external_port()
 
             broker["environment"] = {
                 "KAFKA_BROKER_ID": broker_id,
@@ -175,14 +282,16 @@ class YamlGenerator:
                 "KAFKA_ADVERTISED_LISTENERS": f"PLAINTEXT://{name}:{internal_port}, EXTERNAL://localhost:{port}",
                 "KAFKA_INTER_BROKER_LISTENER_NAME": "PLAINTEXT",
                 "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS": 0,
-                "KAFKA_JMX_PORT": 9999,
-                "KAFKA_JMX_HOSTNAME": name,
+                "KAFKA_JMX_PORT": jmx_port,
+                "KAFKA_JMX_HOSTNAME": "localhost",
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
             }
 
             broker["ports"] = {
-                port: port
+                port: port,
+                jmx_port: jmx_port,
+                self.next_agent_port(): JMX_PORT
             }
 
             broker["volumes"] = [
@@ -193,7 +302,7 @@ class YamlGenerator:
             brokers.append(broker)
             bootstrap_servers.append(f"{name}:{internal_port}")
 
-            rack = YamlGenerator.next_rack(rack, self.args.racks)
+            rack = DockerComposeGenerator.next_rack(rack, self.args.racks)
 
         self.bootstrap_servers = ",".join(bootstrap_servers)
         self.broker_containers = [b["name"] for b in brokers]
@@ -204,11 +313,17 @@ class YamlGenerator:
         schema_registries = []
 
         schema_registry_hosts = []
+        targets = []
+        job = {
+            "name": "schema-registry",
+            "scrape_interval": "5s",
+            "targets": targets
+        }
 
         for schema_id in range(1, self.args.schema_registries + 1):
-            port = 8090 + schema_id
+            port = 8080 + schema_id
 
-            name = "schema-registry" + str(schema_id)
+            name = self.create_name("schema-registry", schema_id)
 
             schema_registry = {
                 "name": name,
@@ -219,11 +334,20 @@ class YamlGenerator:
                 "environment": {
                     "SCHEMA_REGISTRY_HOST_NAME": name,
                     "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "SCHEMA_REGISTRY_LISTENERS": f"http://0.0.0.0:{port}"
+                    "SCHEMA_REGISTRY_LISTENERS": f"http://0.0.0.0:{port}",
+                    "SCHEMA_REGISTRY_OPTS": JMX_PROMETHEUS_JAVA_AGENT + SCHEMA_REGISTRY_JMX_CONFIG
                 },
                 "port": {
                     port: port
-                }}
+                },
+                "volumes": [
+                    LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
+                    LOCAL_VOLUMES + BROKER_JMX_CONFIG + ":/tmp/" + SCHEMA_REGISTRY_JMX_CONFIG
+                ]
+
+            }
+
+            targets.append(f"{name}:{JMX_PORT}")
 
             schema_registries.append(schema_registry)
             schema_registry_hosts.append(f"{name}:{port}")
@@ -231,19 +355,21 @@ class YamlGenerator:
         self.schema_registries = ",".join(schema_registry_hosts)
         self.schema_registry_containers = [s["name"] for s in schema_registries]
 
+        if self.args.schema_registries > 0:
+            self.prometheus_jobs.append(job)
+
         return schema_registries
 
     def generate_control_center_service(self):
         control_centers = []
 
         if self.args.control_center:
-
             control_center = {
                 "name": "control-center",
                 "hostname": "control-center",
                 "container_name": "control-center",
                 "image": "confluentinc/cp-enterprise-control-center:" + self.args.release,
-                "depends_on" : self.broker_containers + self.zookeeper_containers + self.schema_registry_containers,
+                "depends_on": self.broker_containers + self.zookeeper_containers + self.schema_registry_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
                     "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registries
@@ -263,7 +389,7 @@ class YamlGenerator:
                 "hostname": "prometheus",
                 "container_name": "prometheus",
                 "image": "prom/prometheus",
-                "depends_on": self.broker_containers,
+                "depends_on": self.broker_containers + self.schema_registry_containers,
                 "ports": {
                     9090: 9090
                 },
@@ -373,7 +499,7 @@ if __name__ == '__main__':
         print("Zookeeper and Kafka Controllers (KRaft) are mutually exclusive", file=sys.stderr)
         sys.exit(2)
 
-    generator = YamlGenerator(args)
+    generator = DockerComposeGenerator(args)
     generator.generate()
 
     print("Generated {}".format(args.docker_compose_file))

@@ -1,0 +1,20 @@
+global:
+    scrape_interval: 15s
+
+    # Attach these labels to any time series or alerts when communicating with
+    # external systems (federation, remote storage, Alertmanager).
+    external_labels:
+        monitor: 'kafka-monitor'
+
+scrape_configs:
+{% for job in jobs %}
+    - job_name: '{{ job.name }}'
+
+      scrape_interval: {{ job.scrape_interval | default("5s", true) }}
+
+      static_configs:
+        - targets:
+    {%  for target in job.targets %}
+            - {{ target }}
+    {%  endfor %}
+{% endfor %}
