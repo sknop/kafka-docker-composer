@@ -285,7 +285,8 @@ class DockerComposeGenerator:
                 "KAFKA_JMX_PORT": jmx_port,
                 "KAFKA_JMX_HOSTNAME": "localhost",
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
-                "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
+                "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG,
+                "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
             }
 
             broker["ports"] = {
@@ -299,6 +300,13 @@ class DockerComposeGenerator:
                 LOCAL_VOLUMES + BROKER_JMX_CONFIG + ":/tmp/" + BROKER_JMX_CONFIG
             ]
 
+            broker["healthcheck"] = {
+                "test": f"curl -fail --silent http://{name}:8090/kafka/v3/clusters/",
+                "interval": "10s",
+                "retries": "10",
+                "start_period": "20s"
+            }
+
             brokers.append(broker)
             bootstrap_servers.append(f"{name}:{internal_port}")
 
@@ -306,6 +314,10 @@ class DockerComposeGenerator:
 
         self.bootstrap_servers = ",".join(bootstrap_servers)
         self.broker_containers = [b["name"] for b in brokers]
+
+        for broker in brokers:
+            broker["environment"]["KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS"] = \
+                self.bootstrap_servers
 
         return brokers
 
@@ -372,7 +384,11 @@ class DockerComposeGenerator:
                 "depends_on": self.broker_containers + self.zookeeper_containers + self.schema_registry_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registries
+                    "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registries,
+                    "CONTROL_CENTER_REPLICATION_FACTOR": 1
+                },
+                "ports": {
+                    9021: 9021
                 }
 
             }
