@@ -12,28 +12,36 @@ services:
         {% for key,value in service.healthcheck.items() %}
             {{ key }}: {{ value }}
         {% endfor %}
-        {% endif %}
+        {% endif -%}
 
         {% if service.depends_on is defined %}
         depends_on:
         {% for depends in service.depends_on %}
             - {{ depends }}
         {%  endfor %}
-        {% endif +%}
+        {% endif -%}
+
+        {% if service.depends_on_condition is defined %}
+        depends_on:
+        {% for depends in service.depends_on_condition %}
+            {{ depends }}:
+                condition: service_healthy
+        {%  endfor %}
+        {% endif -%}
 
         {%  if service.environment is defined %}
         environment:
         {% for key,value in service.environment.items() %}
             {{ key }}: {{ value }}
         {% endfor %}
-        {% endif %}
+        {% endif -%}
 
         {% if service.ports is defined %}
         ports:
         {% for host,container in service.ports.items() %}
             - {{host}}:{{container}}
         {% endfor %}
-        {% endif %}
+        {% endif -%}
 
         {% if service.volumes is defined %}
         volumes:

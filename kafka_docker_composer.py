@@ -301,7 +301,7 @@ class DockerComposeGenerator:
             ]
 
             broker["healthcheck"] = {
-                "test": f"curl -fail --silent http://{name}:8090/kafka/v3/clusters/",
+                "test": f"curl -fail --silent http://{name}:8090/kafka/v3/clusters/ --output /dev/null || exit 1",
                 "interval": "10s",
                 "retries": "10",
                 "start_period": "20s"
@@ -342,7 +342,7 @@ class DockerComposeGenerator:
                 "hostname": name,
                 "container_name": name,
                 "image": "confluentinc/cp-schema-registry:" + self.args.release,
-                "depends_on": self.broker_containers,
+                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "SCHEMA_REGISTRY_HOST_NAME": name,
                     "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS": self.bootstrap_servers,
@@ -351,6 +351,12 @@ class DockerComposeGenerator:
                 },
                 "port": {
                     port: port
+                },
+                "healthcheck": {
+                    "test": f"curl -fail --silent http://{name}:{port}/subjects --output /dev/null || exit 1",
+                    "interval": "10s",
+                    "retries": "20",
+                    "start_period": "20s"
                 },
                 "volumes": [
                     LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
@@ -364,8 +370,9 @@ class DockerComposeGenerator:
             schema_registries.append(schema_registry)
             schema_registry_hosts.append(f"{name}:{port}")
 
+            self.schema_registry_containers.append(name)
+
         self.schema_registries = ",".join(schema_registry_hosts)
-        self.schema_registry_containers = [s["name"] for s in schema_registries]
 
         if self.args.schema_registries > 0:
             self.prometheus_jobs.append(job)
@@ -381,7 +388,7 @@ class DockerComposeGenerator:
                 "hostname": "control-center",
                 "container_name": "control-center",
                 "image": "confluentinc/cp-enterprise-control-center:" + self.args.release,
-                "depends_on": self.broker_containers + self.zookeeper_containers + self.schema_registry_containers,
+                "depends_on": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
                     "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registries,
