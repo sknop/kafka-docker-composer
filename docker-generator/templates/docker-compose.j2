@@ -12,19 +12,23 @@ services:
             - {{ depends }}
         {%  endfor %}
         {% endif +%}
+        {%  if service.environment is defined %}
         environment:
         {% for key,value in service.environment.items() %}
             {{ key }}: {{ value }}
         {% endfor %}
+        {% endif %}
         {% if service.ports is defined %}
         ports:
         {% for host,container in service.ports.items() %}
             - {{host}}:{{container}}
         {% endfor %}
         {% endif %}
+        {% if service.volumes is defined %}
         volumes:
         {% for volume in service.volumes %}
             - {{ volume }}
         {% endfor %}
+        {% endif %}
 
 {% endfor %}
