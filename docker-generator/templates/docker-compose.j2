@@ -1,0 +1,53 @@
+---
+version: "{{docker_compose_version}}"
+services:
+{% for service in services %}
+    {{ service.name }}:
+        image: {{ service.image }}
+        hostname: {{ service.hostname }}
+        container_name: {{ service.container_name}}
+
+        {%  if service.healthcheck is defined %}
+        healthcheck:
+        {% for key,value in service.healthcheck.items() %}
+            {{ key }}: {{ value }}
+        {% endfor %}
+        {% endif -%}
+
+        {% if service.depends_on is defined %}
+        depends_on:
+        {% for depends in service.depends_on %}
+            - {{ depends }}
+        {%  endfor %}
+        {% endif -%}
+
+        {% if service.depends_on_condition is defined %}
+        depends_on:
+        {% for depends in service.depends_on_condition %}
+            {{ depends }}:
+                condition: service_healthy
+        {%  endfor %}
+        {% endif -%}
+
+        {%  if service.environment is defined %}
+        environment:
+        {% for key,value in service.environment.items() %}
+            {{ key }}: {{ value }}
+        {% endfor %}
+        {% endif -%}
+
+        {% if service.ports is defined %}
+        ports:
+        {% for host,container in service.ports.items() %}
+            - {{host}}:{{container}}
+        {% endfor %}
+        {% endif -%}
+
+        {% if service.volumes is defined %}
+        volumes:
+        {% for volume in service.volumes %}
+            - {{ volume }}
+        {% endfor %}
+        {% endif %}
+
+{% endfor %}

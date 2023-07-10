@@ -1,21 +1,12 @@
 # kafka-docker-composer
-Python script to generate a docker-compose.yaml file based on templates and parameters
+Python script to generate a docker-compose.yaml file based on a Jinja2 template and parameters
 
 **Usage:**
 
 ```
 usage: kafka_docker_composer.py [-h] [-r RELEASE] [-b BROKERS] [-z ZOOKEEPERS]
-                                [-s SCHEMA_REGISTRIES] [-p] [--control-center]
-                                [--docker-compose-template DOCKER_COMPOSE_TEMPLATE]
-                                [--broker-template BROKER_TEMPLATE]
-                                [--zookeeper-template ZOOKEEPER_TEMPLATE]
-                                [--schema-registry-template SCHEMA_REGISTRY_TEMPLATE]
-                                [--control-center-template CONTROL_CENTER_TEMPLATE]
-                                [--prometheus-template PROMETHEUS_TEMPLATE]
-                                [--prometheus-config-template PROMETHEUS_CONFIG_TEMPLATE]
-                                [--docker-compose-file DOCKER_COMPOSE_FILE]
-                                [--broker-internal-protocol BROKER_INTERNAL_PROTOCOL]
-                                [--broker-external-protocol BROKER_EXTERNAL_PROTOCOL]
+                                [-s SCHEMA_REGISTRIES] [-p]
+                                [--control-center]
                                 [--racks RACKS]
                                 [--zookeeper-groups ZOOKEEPER_GROUPS]
                                 [-c CONFIG]
@@ -24,7 +15,7 @@ Kafka docker-compose Generator
 
 optional arguments:
   -h, --help            show this help message and exit
-  -r RELEASE, --release RELEASE
+  -r RELEASE, --release RELEASE (default: 7.4.0)
                         Docker images release
   -b BROKERS, --brokers BROKERS
                         Number of Brokers [1]
