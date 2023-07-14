@@ -19,6 +19,8 @@ options:
                         Number of ZooKeepers [0] - mutually exclusive with controllers
   -c CONTROLLERS, --controllers CONTROLLERS
                         Number of Kafka Connector instances [0] - mutually exclusive with zookeepers
+  -C CONNECTS, --connect CONNECTS
+                        Number of Kafka Connect instances [0]
   -s SCHEMA_REGISTRIES, --schema-registries SCHEMA_REGISTRIES
                         Number of Schema Registry instances [0]
   --control-center      Include Confluent Control Center [False]
@@ -34,14 +36,18 @@ options:
   --config CONFIG       Properties config file, values will be overriden by command line arguments
 ```
 
-**Example:**
+**Examples:**
 ```
-> python3 kafka_docker_composer.py -b 4 -z 3
+> python3 kafka_docker_composer.py -b 4 -z 3 -r 7.3.1
+> docker-compose up -d
+```
+
+```
+> python3 kafka_docker_composer.py --controllers 3 --brokers 3 --schema-registries 2 --control-center  
 > docker-compose up -d
 ```
 
 **TODO:**
-* Add connect
 * Add security
 * Fix dashboards for Grafana
 

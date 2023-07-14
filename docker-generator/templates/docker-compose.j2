@@ -36,6 +36,13 @@ services:
         {% endfor %}
         {% endif -%}
 
+        {% if service.cap_add is defined %}
+        cap_add:
+        {% for capability in service.cap_add %}
+            - {{capability}}
+        {% endfor %}
+        {% endif -%}
+
         {% if service.ports is defined %}
         ports:
         {% for host,container in service.ports.items() %}
@@ -43,7 +50,7 @@ services:
         {% endfor %}
         {% endif -%}
 
-        {% if service.volumes is defined %}
+    {% if service.volumes is defined %}
         volumes:
         {% for volume in service.volumes %}
             - {{ volume }}

@@ -10,7 +10,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
 DEFAULT_RELEASE = "7.4.0"
-JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.18.0"
+JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.19.0"
 JMX_PORT = "8091"
 JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
 JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"
@@ -30,6 +30,7 @@ ZOOKEEPER_PORT = "2181"
 
 BROKER_JMX_CONFIG = "kafka_config.yml"
 SCHEMA_REGISTRY_JMX_CONFIG = "schema-registry.yml"
+CONNECT_JMX_CONFIG = "kafka_connect.yml"
 
 
 class DockerComposeGenerator:
@@ -47,6 +48,8 @@ class DockerComposeGenerator:
         self.quorum_voters = ""
         self.bootstrap_servers = ""
         self.schema_registries = ""
+        self.schema_registry_urls = ""
+        self.connect_urls = ""
 
         self.controllers = []
 
@@ -89,12 +92,16 @@ class DockerComposeGenerator:
         self.generate_services()
         self.generate_prometheus()
 
+    def replication_factor(self):
+        return min(3, self.args.brokers)
+
     def generate_services(self):
         services = []
         services += self.generate_zookeeper_services()
         services += self.generate_controller_services()
         services += self.generate_broker_services()
         services += self.generate_schema_registry_service()
+        services += self.generate_connect_services()
         services += self.generate_control_center_service()
         services += self.generate_prometheus_service()
         services += self.generate_grafana_service()
@@ -161,6 +168,10 @@ class DockerComposeGenerator:
             controller["volumes"] = [
                 LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
                 LOCAL_VOLUMES + BROKER_JMX_CONFIG + ":/tmp/" + BROKER_JMX_CONFIG
+            ]
+
+            controller["cap_add"] = [
+                "NET_ADMIN"
             ]
 
             controllers.append(controller)
@@ -248,6 +259,10 @@ class DockerComposeGenerator:
                 LOCAL_VOLUMES + "jline-2.14.6.jar" + ":/usr/share/java/kafka/jline-2.14.6.jar"
             ]
 
+            zookeeper["cap_add"] = [
+                "NET_ADMIN"
+            ]
+
             zookeeper["ports"] = {
                 zookeeper_external_port: ZOOKEEPER_PORT,
                 jmx_port: jmx_port,
@@ -304,7 +319,7 @@ class DockerComposeGenerator:
             jmx_port = self.next_jmx_external_port()
 
             broker["environment"] = {
-                "KAFKA_LISTENERS": f"PLAINTEXT://{name}:{internal_port}, EXTERNAL://{name}:{port}",
+                "KAFKA_LISTENERS": f"PLAINTEXT://{name}:{internal_port}, EXTERNAL://0.0.0.0:{port}",
                 "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT",
                 "KAFKA_ADVERTISED_LISTENERS": f"PLAINTEXT://{name}:{internal_port}, EXTERNAL://localhost:{port}",
                 "KAFKA_INTER_BROKER_LISTENER_NAME": "PLAINTEXT",
@@ -331,6 +346,10 @@ class DockerComposeGenerator:
                 controller_dict["KAFKA_ZOOKEEPER_CONNECT"] = self.zookeepers
 
             broker["environment"].update(controller_dict)
+
+            broker["cap_add"] = [
+                "NET_ADMIN"
+            ]
 
             broker["ports"] = {
                 port: port,
@@ -372,6 +391,7 @@ class DockerComposeGenerator:
         schema_registries = []
 
         schema_registry_hosts = []
+        schema_registry_urls = []
         targets = []
         job = {
             "name": "schema-registry",
@@ -396,7 +416,10 @@ class DockerComposeGenerator:
                     "SCHEMA_REGISTRY_LISTENERS": f"http://0.0.0.0:{port}",
                     "SCHEMA_REGISTRY_OPTS": JMX_PROMETHEUS_JAVA_AGENT + SCHEMA_REGISTRY_JMX_CONFIG
                 },
-                "port": {
+                "capability": [
+                    "NET_ADMIN"
+                ],
+                "ports": {
                     port: port
                 },
                 "healthcheck": {
@@ -407,24 +430,87 @@ class DockerComposeGenerator:
                 },
                 "volumes": [
                     LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
-                    LOCAL_VOLUMES + BROKER_JMX_CONFIG + ":/tmp/" + SCHEMA_REGISTRY_JMX_CONFIG
+                    LOCAL_VOLUMES + SCHEMA_REGISTRY_JMX_CONFIG + ":/tmp/" + SCHEMA_REGISTRY_JMX_CONFIG
                 ]
-
             }
 
             targets.append(f"{name}:{JMX_PORT}")
 
             schema_registries.append(schema_registry)
             schema_registry_hosts.append(f"{name}:{port}")
+            schema_registry_urls.append(f"http://{name}:{port}")
 
             self.schema_registry_containers.append(name)
 
         self.schema_registries = ",".join(schema_registry_hosts)
+        self.schema_registry_urls = ",".join(schema_registry_urls)
 
         if self.args.schema_registries > 0:
             self.prometheus_jobs.append(job)
 
         return schema_registries
+
+    def generate_connect_services(self):
+        connects = []
+        targets = []
+        connect_hosts = []
+
+        job = {
+            "name": "kafka-connect",
+            "scrape_interval": "5s",
+            "targets": targets
+        }
+
+        for connect_id in range(1, self.args.connect_instances + 1):
+            port = 8082 + connect_id
+
+            name = self.create_name("kafka-connect", connect_id)
+            plugin_dirname = "connect-plugin-jars"
+
+            connect = {
+                "name": name,
+                "hostname": name,
+                "container_name": name,
+                "image": "confluentinc/cp-server-connect:" + self.args.release,
+                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
+                "environment": {
+                    "CONNECT_REST_ADVERTISED_PORT": port,
+                    "CONNECT_REST_PORT": port,
+                    "CONNECT_LISTENERS": f"http://0.0.0.0:{port}",
+                    "CONNECT_BOOTSTRAP_SERVERS": self.bootstrap_servers,
+                    "CONNECT_REST_ADVERTISED_HOST_NAME": name,
+                    "CONNECT_GROUP_ID": "kafka-connect",
+                    "CONNECT_CONFIG_STORAGE_TOPIC": "_connect-configs",
+                    "CONNECT_OFFSET_STORAGE_TOPIC": "_connect-offsets",
+                    "CONNECT_STATUS_STORAGE_TOPIC": "_connect-status",
+                    "CONNECT_KEY_CONVERTER": "org.apache.kafka.connect.storage.StringConverter",
+                    "CONNECT_VALUE_CONVERTER": "io.confluent.connect.avro.AvroConverter",
+                    "CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
+                    "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
+                    "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
+                    "CONNECT_STATUS_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
+                    "CONNECT_PLUGIN_PATH": "/usr/share/java,"
+                                           "/usr/share/confluent-hub-components,"
+                                           f"/data/{plugin_dirname}",
+                    "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + CONNECT_JMX_CONFIG
+                },
+                "ports": {
+                    port: port
+                },
+                "volumes": [
+                    LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
+                    LOCAL_VOLUMES + CONNECT_JMX_CONFIG + ":/tmp/" + CONNECT_JMX_CONFIG,
+                    LOCAL_VOLUMES + f"{plugin_dirname}:/data/{plugin_dirname}"
+                ]
+            }
+
+            targets.append(f"{name}:{JMX_PORT}")
+            connects.append(connect)
+            connect_hosts.append(f"http://{name}:{port}")
+
+        self.connect_urls = ",".join(connect_hosts)
+
+        return connects
 
     def generate_control_center_service(self):
         control_centers = []
@@ -438,8 +524,9 @@ class DockerComposeGenerator:
                 "depends_on": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registries,
-                    "CONTROL_CENTER_REPLICATION_FACTOR": 1
+                    "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
+                    "CONTROL_CENTER_REPLICATION_FACTOR": self.replication_factor(),
+                    "CONTROL_CENTER_CONNECT_CONNECT_CLUSTER": self.connect_urls
                 },
                 "ports": {
                     9021: 9021
@@ -536,6 +623,8 @@ if __name__ == '__main__':
                         help="Number of Kafka Connector instances [0] - mutually exclusive with zookeepers")
     parser.add_argument('-s', '--schema-registries', default=0, type=int,
                         help="Number of Schema Registry instances [0]")
+    parser.add_argument('-C', '--connect-instances', default=0, type=int,
+                        help="Number of Kafka Connect instances [0]")
     parser.add_argument('--control-center', default=False, action='store_true',
                         help="Include Confluent Control Center [False]")
 
