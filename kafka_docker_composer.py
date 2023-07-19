@@ -174,6 +174,10 @@ class DockerComposeGenerator:
                 "NET_ADMIN"
             ]
 
+            controller["ports"] = {
+                port: port
+            }
+
             controllers.append(controller)
             quorum_voters.append(f"{node_id}@{name}:{port}")
 
