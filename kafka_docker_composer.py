@@ -96,6 +96,9 @@ class DockerComposeGenerator:
     def replication_factor(self):
         return min(3, self.args.brokers)
 
+    def min_insync_replicas(self):
+        return max(1, self.replication_factor() - 1)
+
     def generate_services(self):
         services = []
         services += self.generate_zookeeper_services()
@@ -163,6 +166,7 @@ class DockerComposeGenerator:
                 "KAFKA_JMX_PORT": 9999,
                 "KAFKA_JMX_HOSTNAME": name,
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
+                "KAFKA_DEFAULT_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
             }
 
@@ -333,6 +337,7 @@ class DockerComposeGenerator:
                 "KAFKA_JMX_HOSTNAME": "localhost",
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG,
+                "KAFKA_MIN_INSYNC_REPLICAS": self.min_insync_replicas(),
                 "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
             }
 
@@ -347,6 +352,7 @@ class DockerComposeGenerator:
                 controller_dict["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = \
                     "CONTROLLER:PLAINTEXT" + "," + broker["environment"]["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"]
             else:
+                controller_dict["KAFKA_DEFAULT_REPLICATION_FACTOR"] = self.replication_factor(),
                 controller_dict["KAFKA_BROKER_ID"] = broker_id
                 controller_dict["KAFKA_ZOOKEEPER_CONNECT"] = self.zookeepers
 
