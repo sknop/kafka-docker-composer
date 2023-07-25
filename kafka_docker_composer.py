@@ -9,7 +9,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
-DEFAULT_RELEASE = "7.4.0"
+DEFAULT_RELEASE = "7.4.1"
 JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.19.0"
 JMX_PORT = "8091"
 JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
@@ -56,6 +56,7 @@ class DockerComposeGenerator:
         self.controller_containers = []
         self.zookeeper_containers = []
         self.broker_containers = []
+        self.connect_containers = []
         self.schema_registry_containers = []
 
         self.prometheus_jobs = []
@@ -501,6 +502,12 @@ class DockerComposeGenerator:
                 "ports": {
                     port: port
                 },
+                "healthcheck": {
+                    "test": f"curl -fail --silent http://{name}:{port}/connectors --output /dev/null || exit 1",
+                    "interval": "10s",
+                    "retries": "20",
+                    "start_period": "20s"
+                },
                 "volumes": [
                     LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
                     LOCAL_VOLUMES + CONNECT_JMX_CONFIG + ":/tmp/" + CONNECT_JMX_CONFIG,
@@ -511,6 +518,7 @@ class DockerComposeGenerator:
             targets.append(f"{name}:{JMX_PORT}")
             connects.append(connect)
             connect_hosts.append(f"http://{name}:{port}")
+            self.connect_containers.append(name)
 
         self.connect_urls = ",".join(connect_hosts)
 
@@ -525,7 +533,8 @@ class DockerComposeGenerator:
                 "hostname": "control-center",
                 "container_name": "control-center",
                 "image": "confluentinc/cp-enterprise-control-center:" + self.args.release,
-                "depends_on": self.broker_containers + self.schema_registry_containers,
+                "depends_on_condition":
+                    self.broker_containers + self.schema_registry_containers + self.connect_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
                     "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
