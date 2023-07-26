@@ -1,0 +1,10 @@
+{
+    "connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "kafka.topic": "users",
+    "confluent.topic.replication.factor": "3",
+    "quickstart": "users",
+    "max.interval": 1000,
+    "iterations": 10000000,
+    "tasks.max": "2"
+}
