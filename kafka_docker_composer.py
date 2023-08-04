@@ -496,6 +496,7 @@ class DockerComposeGenerator:
                     "CONNECT_STATUS_STORAGE_TOPIC": "_connect-status",
                     "CONNECT_KEY_CONVERTER": "org.apache.kafka.connect.storage.StringConverter",
                     "CONNECT_VALUE_CONVERTER": "io.confluent.connect.avro.AvroConverter",
+                    "CONNECT_EXACTLY_ONCE_SOURCE_SUPPORT": "enabled",
                     "CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
                     "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
                     "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
