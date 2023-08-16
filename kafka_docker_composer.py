@@ -352,7 +352,7 @@ class DockerComposeGenerator:
                 controller_dict["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = \
                     "CONTROLLER:PLAINTEXT" + "," + broker["environment"]["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"]
             else:
-                controller_dict["KAFKA_DEFAULT_REPLICATION_FACTOR"] = self.replication_factor(),
+                controller_dict["KAFKA_DEFAULT_REPLICATION_FACTOR"] = self.replication_factor()
                 controller_dict["KAFKA_BROKER_ID"] = broker_id
                 controller_dict["KAFKA_ZOOKEEPER_CONNECT"] = self.zookeepers
 
