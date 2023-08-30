@@ -9,7 +9,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
-DEFAULT_RELEASE = "7.4.1"
+DEFAULT_RELEASE = "7.5.0"
 JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.19.0"
 JMX_PORT = "8091"
 JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
