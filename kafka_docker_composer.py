@@ -105,7 +105,10 @@ class DockerComposeGenerator:
         self.generate_prometheus()
 
     def replication_factor(self):
-        return min(3, self.args.brokers)
+        if self.args.shared_mode:
+            return min(3, self.args.brokers + self.args.controllers)
+        else:
+            return min(3, self.args.brokers)
 
     def min_insync_replicas(self):
         return max(1, self.replication_factor() - 1)
@@ -179,8 +182,14 @@ class DockerComposeGenerator:
                 "KAFKA_JMX_HOSTNAME": name,
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
                 "KAFKA_DEFAULT_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_OFFSET_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
             }
+
             if self.args.shared_mode:
                 internal_port = self.next_internal_broker_port()
                 external_port = self.next_external_broker_port()
@@ -192,6 +201,16 @@ class DockerComposeGenerator:
                 controller["environment"]["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = \
                     "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
                 controller["environment"]["KAFKA_INTER_BROKER_LISTENER_NAME"] = "PLAINTEXT"
+
+                controller["healthcheck"] = {
+                    "test": f"curl -fail --silent http://{name}:8090/kafka/v3/clusters/ --output /dev/null || exit 1",
+                    "interval": "10s",
+                    "retries": "10",
+                    "start_period": "20s"
+                }
+                if self.bootstrap_servers != "":
+                    self.bootstrap_servers += ','
+                self.bootstrap_servers += f"{name}:{internal_port}"
 
             controller["volumes"] = [
                 LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
@@ -408,7 +427,9 @@ class DockerComposeGenerator:
 
             rack = DockerComposeGenerator.next_rack(rack, self.args.racks)
 
-        self.bootstrap_servers = ",".join(bootstrap_servers)
+        if self.args.brokers > 0:
+            self.bootstrap_servers = ",".join(bootstrap_servers)
+
         self.broker_containers = [b["name"] for b in brokers]
 
         for broker in brokers:
@@ -420,6 +441,12 @@ class DockerComposeGenerator:
                 self.bootstrap_servers
 
         return brokers
+
+    def generate_depends_on(self):
+        if self.args.shared_mode:
+            return self.controller_containers + self.broker_containers + self.schema_registry_containers
+        else:
+            return self.broker_containers + self.schema_registry_containers
 
     def generate_schema_registry_service(self):
         schema_registries = []
@@ -443,7 +470,7 @@ class DockerComposeGenerator:
                 "hostname": name,
                 "container_name": name,
                 "image": f"{self.repository}/cp-schema-registry{self.tc}:" + self.args.release,
-                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
+                "depends_on_condition": self.generate_depends_on(),
                 "environment": {
                     "SCHEMA_REGISTRY_HOST_NAME": name,
                     "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS": self.bootstrap_servers,
@@ -506,7 +533,7 @@ class DockerComposeGenerator:
                 "hostname": name,
                 "container_name": name,
                 "image": f"{self.repository}/cp-server-connect{self.tc}:" + self.args.release,
-                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
+                "depends_on_condition": self.generate_depends_on(),
                 "environment": {
                     "CONNECT_REST_ADVERTISED_PORT": port,
                     "CONNECT_REST_PORT": port,
@@ -581,7 +608,7 @@ class DockerComposeGenerator:
                 "hostname": name,
                 "container_name": name,
                 "image": f"{self.repository}/cp-ksqldb-server{self.tc}:" + self.args.release,
-                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
+                "depends_on_condition": self.generate_depends_on(),
                 "environment": {
                     "KSQL_LISTENERS": f"http://0.0.0.0:{port}",
                     "KSQL_BOOTSTRAP_SERVERS": self.bootstrap_servers,
@@ -590,7 +617,9 @@ class DockerComposeGenerator:
                     "KSQL_KSQL_CONNECT_URL": self.connect_urls,
                     "KSQL_KSQL_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
                     "KSQL_KSQL_SERVICE_ID": "kafka-docker-composer",
-                    "KSQL_KSQL_HIDDEN_TOPICS": "^_.*"
+                    "KSQL_KSQL_HIDDEN_TOPICS": "^_.*",
+                    "KSQL_KSQL_INTERNAL_TOPICS_REPLICAS": self.replication_factor(),
+                    "KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 },
                 "capability": [
                     "NET_ADMIN"
@@ -626,8 +655,7 @@ class DockerComposeGenerator:
                 "hostname": "control-center",
                 "container_name": "control-center",
                 "image": f"{self.repository}/cp-enterprise-control-center{self.tc}:" + self.args.release,
-                "depends_on_condition":
-                    self.broker_containers + self.schema_registry_containers + self.connect_containers + self.ksqldb_containers,
+                "depends_on_condition": self.generate_depends_on() + self.connect_containers + self.ksqldb_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
                     "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
@@ -768,6 +796,10 @@ if __name__ == '__main__':
     # Check for inconsistencies
     if args.zookeepers and args.controllers:
         print("Zookeeper and Kafka Controllers (KRaft) are mutually exclusive", file=sys.stderr)
+        sys.exit(2)
+
+    if args.zookeepers and args.shared_mode:
+        print("Zookeeper cannot run in shared mode with a Broker. Nice try!", file=sys.stderr)
         sys.exit(2)
 
     generator = DockerComposeGenerator(args)
