@@ -431,7 +431,7 @@ class DockerComposeGenerator:
                 "name": name,
                 "hostname": name,
                 "container_name": name,
-                "image": "{self.repository}/cp-schema-registry{self.tc}:" + self.args.release,
+                "image": f"{self.repository}/cp-schema-registry{self.tc}:" + self.args.release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "SCHEMA_REGISTRY_HOST_NAME": name,
@@ -494,7 +494,7 @@ class DockerComposeGenerator:
                 "name": name,
                 "hostname": name,
                 "container_name": name,
-                "image": "{self.repository}/cp-server-connect{self.tc}:" + self.args.release,
+                "image": f"{self.repository}/cp-server-connect{self.tc}:" + self.args.release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "CONNECT_REST_ADVERTISED_PORT": port,
@@ -569,7 +569,7 @@ class DockerComposeGenerator:
                 'name': name,
                 "hostname": name,
                 "container_name": name,
-                "image": "{self.repository}/cp-ksqldb-server{self.tc}:" + self.args.release,
+                "image": f"{self.repository}/cp-ksqldb-server{self.tc}:" + self.args.release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "KSQL_LISTENERS": f"http://0.0.0.0:{port}",
@@ -614,7 +614,7 @@ class DockerComposeGenerator:
                 "name": "control-center",
                 "hostname": "control-center",
                 "container_name": "control-center",
-                "image": "{self.repository}/cp-enterprise-control-center{self.tc}:" + self.args.release,
+                "image": f"{self.repository}/cp-enterprise-control-center{self.tc}:" + self.args.release,
                 "depends_on_condition":
                     self.broker_containers + self.schema_registry_containers + self.connect_containers + self.ksqldb_containers,
                 "environment": {
