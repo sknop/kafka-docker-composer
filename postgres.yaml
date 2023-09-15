@@ -1,0 +1,16 @@
+---
+version: "3.8"
+services:
+    postgres:
+        image: postgres
+        hostname: postgres
+        container_name: postgres
+        restart: always
+        environment:
+          POSTGRES_PASSWORD: adminpass
+
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+          - 8080:8080

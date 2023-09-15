@@ -47,6 +47,21 @@ options:
 > docker-compose up -d
 ```
 
+**Connectors**
+
+There are a few preconfigured connector plugins in the volumes/connector-plugin-jars directory that will be
+automatically mapped into the kafka-connect instances. Add required connectors (unpacked from zip file) here
+if you require more.
+
+Also attached is a little postgres.yaml file that can be loaded with the Confluent Kafka Cluster with the -f option:
+
+```shell
+> docker-compose -f docker-compose.yaml -f postgres.yaml up -d
+```
+
+You can extend the same principle for any other data sources or sinks. Started together, all containers are 
+started in the same network for easy testing.
+
 **TODO:**
 * Add security
 * Fix dashboards for Grafana
