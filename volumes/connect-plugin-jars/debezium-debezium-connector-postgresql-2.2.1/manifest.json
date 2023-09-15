@@ -1,0 +1,58 @@
+{
+  "name": "debezium-connector-postgresql",
+  "version": "2.2.1",
+  "title": "Debezium PostgreSQL CDC Connector",
+  "description": "Debezium’s PostgreSQL Connector can monitor and record the row-level changes in the schemas of a <a href=\"\">PostgreSQL database</a>. The first time it connects to a PostgreSQL server/cluster, it reads a consistent snapshot of all of the schemas. When that snapshot is complete, the connector continuously streams the changes that were committed to PostgreSQL 9.6 or later and generates corresponding insert, update and delete events. All of the events for each table are recorded in a separate Kafka topic, where they can be easily consumed by applications and services.\nThis connector requires the PostgreSQL server have a logical decoding plugin installed and configured. See the <a href=\"http://debezium.io/docs/connectors/postgresql/\">documentation</a> for details.",
+  "documentation_url": "http://debezium.io/docs/connectors/postgresql/",
+  "source_url": "https://github.com/debezium/debezium/",
+  "logo": "assets/color_debezium_256px.png",
+  "owner": {
+    "name": "Debezium Community",
+    "username": "debezium",
+    "type": "organization",
+    "url": "https://debezium.io",
+    "logo": "assets/color_debezium_256px.png"
+  },
+  "features": {
+    "confluent_control_center_integration": true,
+    "kafka_connect_api": true,
+    "single_message_transforms": true,
+    "supported_encodings": [
+      "any"
+    ]
+  },
+  "requirements": [
+    "PostgreSQL 9.6 or later"
+  ],
+  "docker_image": {
+    "namespace": "debezium",
+    "name": "debezium/connect",
+    "tag": "2.2.1"
+  },
+  "license": [
+    {
+      "name": "Apache 2.0",
+      "url": "https://github.com/debezium/debezium/blob/master/LICENSE.txt"
+    }
+  ],
+  "support": {
+    "provider_name": "Confluent, Inc.",
+    "summary": "Confluent supports Debezium's PostgreSQL Connector version 0.9.3 and later, and using this connector with PostgreSQL 9.6 or later. Find more information <a href=\"https://docs.confluent.io/current/connect/debezium-connect-postgres/index.html\">here</a>.<p>This connector is <a href=\"https://www.confluent.io/subscription/\">supported by Confluent</a> as part of a\n<a href=\"https://www.confluent.io/product/confluent-platform/\">Confluent Platform</a> subscription.",
+    "url": "https://docs.confluent.io/current/",
+    "logo": "assets/confluent.png"
+  },
+  "component_types": [
+    "source"
+  ],
+  "tags": [
+    "postgres",
+    "postgresql",
+    "dbms",
+    "rdbms",
+    "relational",
+    "json",
+    "change data capture",
+    "cdc",
+    "snapshot"
+  ]
+}
