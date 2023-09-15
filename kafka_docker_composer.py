@@ -169,7 +169,7 @@ class DockerComposeGenerator:
             controller["environment"] = {
                 "KAFKA_NODE_ID": node_id,
                 "CLUSTER_ID": self.args.uuid,
-                "KAFKA_PROCESS_ROLES": "controller",
+                "KAFKA_PROCESS_ROLES": "controller,broker" if self.args.shared_mode else "controller",
                 "KAFKA_LISTENERS": f"CONTROLLER://{name}:{port}",
                 "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT",
                 "KAFKA_INTER_BROKER_LISTENER_NAME": "CONTROLLER",
@@ -181,6 +181,17 @@ class DockerComposeGenerator:
                 "KAFKA_DEFAULT_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
             }
+            if self.args.shared_mode:
+                internal_port = self.next_internal_broker_port()
+                external_port = self.next_external_broker_port()
+
+                controller["environment"]["KAFKA_ADVERTISED_LISTENERS"] = \
+                    f"PLAINTEXT://{name}:{internal_port}, EXTERNAL://localhost:{external_port}"
+                controller["environment"]["KAFKA_LISTENERS"] = \
+                    f"CONTROLLER://{name}:{port},PLAINTEXT://{name}:{internal_port},EXTERNAL://0.0.0.0:{external_port}"
+                controller["environment"]["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = \
+                    "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+                controller["environment"]["KAFKA_INTER_BROKER_LISTENER_NAME"] = "PLAINTEXT"
 
             controller["volumes"] = [
                 LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
@@ -715,6 +726,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
     parser.add_argument('--with-tc', action="store_true", help="Build and use local image with tc enabled")
+    parser.add_argument("--shared-mode", action="store_true", help="Enable shared mode for controllers")
 
     parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers [1]")
     parser.add_argument('-z', '--zookeepers', default=0, type=int,
