@@ -10,7 +10,9 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
 DEFAULT_RELEASE = "7.5.0"
-JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.19.0"
+REPOSITORY = "confluentinc"
+LOCALBUILD = "localbuild"
+JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.20.0"
 JMX_PORT = "8091"
 JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
 JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"
@@ -43,6 +45,13 @@ class DockerComposeGenerator:
             trim_blocks=True,
             lstrip_blocks=True
         )
+
+        if self.args.with_tc:
+            self.repository = LOCALBUILD
+            self.tc = "-tc"
+        else:
+            self.repository = REPOSITORY
+            self.tc = ""
 
         self.zookeepers = ""
         self.quorum_voters = ""
@@ -155,7 +164,7 @@ class DockerComposeGenerator:
             controller["hostname"] = name
             controller["container_name"] = name
 
-            controller["image"] = f"confluentinc/{KAFKA_CONTAINER}:" + self.args.release
+            controller["image"] = f"{self.repository}/{KAFKA_CONTAINER}{self.tc}:" + self.args.release
 
             controller["environment"] = {
                 "KAFKA_NODE_ID": node_id,
@@ -247,7 +256,7 @@ class DockerComposeGenerator:
 
             zookeeper_servers.append(name + ":2888:3888")
 
-            zookeeper["image"] = "confluentinc/cp-zookeeper:" + self.args.release
+            zookeeper["image"] = "{self.repository}/cp-zookeeper{self.tc}:" + self.args.release
 
             jmx_port = self.next_jmx_external_port()
 
@@ -324,7 +333,7 @@ class DockerComposeGenerator:
 
             targets.append(f"{name}:{JMX_PORT}")
 
-            broker["image"] = f"confluentinc/{KAFKA_CONTAINER}:" + self.args.release
+            broker["image"] = f"{self.repository}/{KAFKA_CONTAINER}{self.tc}:" + self.args.release
 
             broker["depends_on"] = self.controller_containers if self.use_kraft else self.zookeeper_containers
 
@@ -422,7 +431,7 @@ class DockerComposeGenerator:
                 "name": name,
                 "hostname": name,
                 "container_name": name,
-                "image": "confluentinc/cp-schema-registry:" + self.args.release,
+                "image": "{self.repository}/cp-schema-registry{self.tc}:" + self.args.release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "SCHEMA_REGISTRY_HOST_NAME": name,
@@ -485,7 +494,7 @@ class DockerComposeGenerator:
                 "name": name,
                 "hostname": name,
                 "container_name": name,
-                "image": "confluentinc/cp-server-connect:" + self.args.release,
+                "image": "{self.repository}/cp-server-connect{self.tc}:" + self.args.release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "CONNECT_REST_ADVERTISED_PORT": port,
@@ -509,6 +518,9 @@ class DockerComposeGenerator:
                                            f"/data/{plugin_dirname}",
                     "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + CONNECT_JMX_CONFIG
                 },
+                "capability": [
+                    "NET_ADMIN"
+                ],
                 "ports": {
                     port: port
                 },
@@ -557,7 +569,7 @@ class DockerComposeGenerator:
                 'name': name,
                 "hostname": name,
                 "container_name": name,
-                "image": "confluentinc/cp-ksqldb-server:" + self.args.release,
+                "image": "{self.repository}/cp-ksqldb-server{self.tc}:" + self.args.release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "environment": {
                     "KSQL_LISTENERS": f"http://0.0.0.0:{port}",
@@ -569,6 +581,9 @@ class DockerComposeGenerator:
                     "KSQL_KSQL_SERVICE_ID": "kafka-docker-composer",
                     "KSQL_KSQL_HIDDEN_TOPICS": "^_.*"
                 },
+                "capability": [
+                    "NET_ADMIN"
+                ],
                 "ports": {
                     port: port
                 },
@@ -599,7 +614,7 @@ class DockerComposeGenerator:
                 "name": "control-center",
                 "hostname": "control-center",
                 "container_name": "control-center",
-                "image": "confluentinc/cp-enterprise-control-center:" + self.args.release,
+                "image": "{self.repository}/cp-enterprise-control-center{self.tc}:" + self.args.release,
                 "depends_on_condition":
                     self.broker_containers + self.schema_registry_containers + self.connect_containers + self.ksqldb_containers,
                 "environment": {
@@ -609,6 +624,9 @@ class DockerComposeGenerator:
                     "CONTROL_CENTER_CONNECT_CONNECT_CLUSTER": self.connect_urls,
                     "CONTROL_CENTER_KSQL_KSQL_URL": self.ksqldb_urls
                 },
+                "capability": [
+                    "NET_ADMIN"
+                ],
                 "ports": {
                     9021: 9021
                 }
@@ -696,6 +714,7 @@ if __name__ == '__main__':
     # optional with defaults
 
     parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
+    parser.add_argument('--with-tc', action="store_true", help="Build and use local image with tc enabled")
 
     parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers [1]")
     parser.add_argument('-z', '--zookeepers', default=0, type=int,
