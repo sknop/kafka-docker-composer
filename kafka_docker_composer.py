@@ -9,7 +9,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
-DEFAULT_RELEASE = "7.5.0"
+DEFAULT_RELEASE = "7.6.0"
 REPOSITORY = "confluentinc"
 LOCALBUILD = "localbuild"
 JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.20.0"
@@ -24,7 +24,7 @@ BROKER_INTERNAL_BASE_PORT = 19090
 
 LOCAL_VOLUMES = "$PWD/volumes/"
 
-DOCKER_COMPOSE_FILE = "docker-compose.yaml"
+DOCKER_COMPOSE_FILE = "docker-compose.yml"
 KAFKA_CONTAINER = "cp-server"
 
 ZOOKEEPER_JMX_CONFIG = "zookeeper_config.yml"
