@@ -286,7 +286,7 @@ class DockerComposeGenerator:
 
             zookeeper_servers.append(name + ":2888:3888")
 
-            zookeeper["image"] = "{self.repository}/cp-zookeeper{self.tc}:" + self.args.release
+            zookeeper["image"] = f"{self.repository}/cp-zookeeper{self.tc}:" + self.args.release
 
             jmx_port = self.next_jmx_external_port()
 
