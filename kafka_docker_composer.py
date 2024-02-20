@@ -187,6 +187,7 @@ class DockerComposeGenerator:
                 "KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
             }
 
