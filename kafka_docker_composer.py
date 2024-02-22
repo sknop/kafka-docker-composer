@@ -156,6 +156,13 @@ class DockerComposeGenerator:
         controllers = []
         quorum_voters = []
 
+        targets = []
+        job = {
+            "name": "kafka-controller",
+            "scrape_interval": "5s",
+            "targets": targets
+        }
+
         for counter in range(1, self.args.controllers + 1):
             port = self.next_internal_broker_port()
             node_id = self.next_node_id()
@@ -166,6 +173,8 @@ class DockerComposeGenerator:
             controller["name"] = name
             controller["hostname"] = name
             controller["container_name"] = name
+
+            targets.append(f"{name}:{JMX_PORT}")
 
             controller["image"] = f"{self.repository}/{KAFKA_CONTAINER}{self.tc}:" + self.args.release
 
@@ -237,6 +246,9 @@ class DockerComposeGenerator:
 
         for controller in controllers:
             controller["environment"]["KAFKA_CONTROLLER_QUORUM_VOTERS"] = self.quorum_voters
+
+        if self.args.controllers > 0:
+            self.prometheus_jobs.append(job)
 
         self.controllers = controllers
 
@@ -689,7 +701,7 @@ class DockerComposeGenerator:
                 "hostname": "prometheus",
                 "container_name": "prometheus",
                 "image": "prom/prometheus",
-                "depends_on": self.broker_containers + self.schema_registry_containers,
+                "depends_on": self.controller_containers + self.zookeeper_containers + self.broker_containers + self.schema_registry_containers,
                 "ports": {
                     9090: 9090
                 },
