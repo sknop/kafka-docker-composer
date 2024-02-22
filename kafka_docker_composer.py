@@ -188,6 +188,7 @@ class DockerComposeGenerator:
                 "KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
+                "KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS": self.replication_factor(),
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
             }
 
@@ -382,6 +383,8 @@ class DockerComposeGenerator:
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG,
                 "KAFKA_MIN_INSYNC_REPLICAS": self.min_insync_replicas(),
                 "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
+                "KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_CONFLUENT_CLUSTER_LINK_ENABLE": self.replication_factor() >= 3,
             }
 
             controller_dict = {}
