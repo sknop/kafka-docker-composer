@@ -401,6 +401,7 @@ class DockerComposeGenerator:
                 controller_dict["KAFKA_DEFAULT_REPLICATION_FACTOR"] = self.replication_factor()
                 controller_dict["KAFKA_BROKER_ID"] = broker_id
                 controller_dict["KAFKA_ZOOKEEPER_CONNECT"] = self.zookeepers
+                controller_dict["KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS"] = self.replication_factor()
 
             broker["environment"].update(controller_dict)
 
