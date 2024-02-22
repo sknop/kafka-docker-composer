@@ -754,20 +754,20 @@ if __name__ == '__main__':
     # optional with defaults
 
     parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
-    parser.add_argument('--with-tc', action="store_true", help="Build and use local image with tc enabled")
+    parser.add_argument('--with-tc', action="store_true", help="Build and use a local image with tc enabled")
     parser.add_argument("--shared-mode", action="store_true", help="Enable shared mode for controllers")
 
     parser.add_argument('-b', '--brokers', default=1, type=int, help="Number of Brokers [1]")
     parser.add_argument('-z', '--zookeepers', default=0, type=int,
                         help="Number of ZooKeepers [0]  - mutually exclusive with controllers")
     parser.add_argument('-c', '--controllers', default=0, type=int,
-                        help="Number of Kafka Connector instances [0] - mutually exclusive with zookeepers")
+                        help="Number of Kafka controller instances [0] - mutually exclusive with ZooKeepers")
     parser.add_argument('-s', '--schema-registries', default=0, type=int,
                         help="Number of Schema Registry instances [0]")
     parser.add_argument('-C', '--connect-instances', default=0, type=int,
                         help="Number of Kafka Connect instances [0]")
     parser.add_argument('-k', '--ksqldb-instances', default=0, type=int,
-                        help="Numer of ksqlDB instances [0]")
+                        help="Number of ksqlDB instances [0]")
     parser.add_argument('--control-center', default=False, action='store_true',
                         help="Include Confluent Control Center [False]")
 
@@ -788,7 +788,7 @@ if __name__ == '__main__':
                         help=f"Output file for docker-compose, default [{DOCKER_COMPOSE_FILE}]")
 
     parser.add_argument('--config',
-                        help="Properties config file, values will be overriden by command line arguments")
+                        help="Properties config file, values will be overridden by command line arguments")
     args = parser.parse_args()
 
     if args.config:
