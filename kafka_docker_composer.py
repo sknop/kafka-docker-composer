@@ -729,8 +729,12 @@ class DockerComposeGenerator:
                 },
                 "volumes": [
                     "$PWD/volumes/provisioning:/etc/grafana/provisioning",
-                    "$PWD/volumes/dashboards:/var/lib/grafana/dashboards"
-                ]
+                    "$PWD/volumes/dashboards:/var/lib/grafana/dashboards",
+                    "$PWD/volumes/config.ini:/etc/grafana/config.ini"
+                ],
+                "environment": {
+                    "GF_PATHS_CONFIG": "/etc/grafana/config.ini"
+                }
             }
             grafanas.append(grafana)
 
