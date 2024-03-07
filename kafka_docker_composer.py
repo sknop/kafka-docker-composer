@@ -18,6 +18,7 @@ JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.ja
 JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"
 JMX_EXTERNAL_PORT = 10000
 JMX_AGENT_PORT = 10100
+HTTP_PORT = 10200
 
 BROKER_EXTERNAL_BASE_PORT = 9090
 BROKER_INTERNAL_BASE_PORT = 19090
@@ -74,6 +75,7 @@ class DockerComposeGenerator:
 
         self.jmx_external_port_counter = JMX_EXTERNAL_PORT
         self.agent_port_counter = JMX_AGENT_PORT
+        self.http_port_counter = HTTP_PORT
 
         self.use_kraft = self.args.controllers > 0
         self.node_id = 0
@@ -87,6 +89,10 @@ class DockerComposeGenerator:
     def next_agent_port(self):
         self.agent_port_counter += 1
         return self.agent_port_counter
+
+    def next_http_port(self):
+        self.http_port_counter += 1
+        return self.http_port_counter
 
     def next_node_id(self):
         self.node_id += 1
@@ -424,7 +430,8 @@ class DockerComposeGenerator:
             broker["ports"] = {
                 port: port,
                 jmx_port: jmx_port,
-                self.next_agent_port(): JMX_PORT
+                self.next_agent_port(): JMX_PORT,
+                self.next_http_port(): 8090
             }
 
             broker["volumes"] = [
