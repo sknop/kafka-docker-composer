@@ -403,6 +403,7 @@ class DockerComposeGenerator:
                 "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
                 "KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_CLUSTER_LINK_ENABLE": self.replication_factor() >= 3,
+                "KAFKA_CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE": self.replication_factor() >= 3,
             }
 
             controller_dict = {}
