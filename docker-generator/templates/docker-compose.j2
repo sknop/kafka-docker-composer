@@ -1,5 +1,6 @@
 ---
-version: "{{docker_compose_version}}"
+{# version: "{{docker_compose_version}}" #}
+{# version is now obsolete #}
 services:
 {% for service in services %}
     {{ service.name }}:
