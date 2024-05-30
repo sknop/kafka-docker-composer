@@ -182,7 +182,7 @@ class DockerComposeGenerator:
 
             targets.append(f"{name}:{JMX_PORT}")
 
-            controller["image"] = f"{self.repository}/{KAFKA_CONTAINER}{self.tc}:" + self.args.release
+            controller["image"] = f"{self.repository}/{self.args.kafka_container}{self.tc}:" + self.args.release
 
             controller["environment"] = {
                 "KAFKA_NODE_ID": node_id,
@@ -383,7 +383,7 @@ class DockerComposeGenerator:
 
             targets.append(f"{name}:{JMX_PORT}")
 
-            broker["image"] = f"{self.repository}/{KAFKA_CONTAINER}{self.tc}:" + self.args.release
+            broker["image"] = f"{self.repository}/{self.args.kafka_container}{self.tc}:" + self.args.release
 
             broker["depends_on"] = self.controller_containers if self.use_kraft else self.zookeeper_containers
 
