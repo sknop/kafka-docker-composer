@@ -9,7 +9,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
-DEFAULT_RELEASE = "7.6.0"
+DEFAULT_RELEASE = "7.7.0"
 REPOSITORY = "confluentinc"
 LOCALBUILD = "localbuild"
 JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.20.0"
