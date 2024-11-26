@@ -9,10 +9,10 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
-DEFAULT_RELEASE = "7.7.0"
+DEFAULT_RELEASE = "7.7.1"
 REPOSITORY = "confluentinc"
 LOCALBUILD = "localbuild"
-JMX_PROMETHEUS_JAVA_AGENT_VERSION = "0.20.0"
+JMX_PROMETHEUS_JAVA_AGENT_VERSION = "1.0.1"
 JMX_PORT = "8091"
 JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
 JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"
@@ -190,7 +190,6 @@ class DockerComposeGenerator:
                 "KAFKA_PROCESS_ROLES": "controller,broker" if self.args.shared_mode else "controller",
                 "KAFKA_LISTENERS": f"CONTROLLER://{name}:{port}",
                 "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP": "CONTROLLER:PLAINTEXT",
-                "KAFKA_INTER_BROKER_LISTENER_NAME": "CONTROLLER",
                 "KAFKA_CONTROLLER_LISTENER_NAMES": "CONTROLLER",
                 "KAFKA_CONTROLLER_QUORUM_VOTERS": "# Need to set #",
                 "KAFKA_JMX_PORT": 9999,
