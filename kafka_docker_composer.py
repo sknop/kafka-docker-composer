@@ -32,6 +32,7 @@ ZOOKEEPER_JMX_CONFIG = "zookeeper_config.yml"
 ZOOKEEPER_PORT = "2181"
 
 BROKER_JMX_CONFIG = "kafka_config.yml"
+CONTROLLER_JMX_CONFIG = "kafka_controller.yml"
 SCHEMA_REGISTRY_JMX_CONFIG = "schema-registry.yml"
 CONNECT_JMX_CONFIG = "kafka_connect.yml"
 
@@ -203,7 +204,7 @@ class DockerComposeGenerator:
                 "KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
                 "KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS": self.replication_factor(),
-                "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG
+                "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + CONTROLLER_JMX_CONFIG
             }
 
             if self.args.shared_mode:
@@ -230,7 +231,7 @@ class DockerComposeGenerator:
 
             controller["volumes"] = [
                 LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
-                LOCAL_VOLUMES + BROKER_JMX_CONFIG + ":/tmp/" + BROKER_JMX_CONFIG
+                LOCAL_VOLUMES + CONTROLLER_JMX_CONFIG + ":/tmp/" + CONTROLLER_JMX_CONFIG
             ]
 
             controller["cap_add"] = [
