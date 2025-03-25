@@ -709,7 +709,7 @@ class DockerComposeGenerator:
                 "hostname": "prometheus",
                 "container_name": "prometheus",
                 "image": "prom/prometheus",
-                "depends_on": self.controller_containers + self.zookeeper_containers + self.broker_containers + self.schema_registry_containers,
+                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "ports": {
                     9090: 9090
                 },
