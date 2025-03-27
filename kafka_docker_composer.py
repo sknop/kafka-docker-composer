@@ -218,13 +218,6 @@ class DockerComposeGenerator:
                 controller["environment"]["KAFKA_METRIC_REPORTERS"] = "io.confluent.metrics.reporter.ConfluentMetricsReporter"
                 controller["environment"]["KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS"] = self.replication_factor()
 
-            controller["healthcheck"] = {
-                "test": f"{self.healthcheck_command} cluster-id --bootstrap-controller {name}:{port} || exit 1",
-                "interval": "10s",
-                "retries": "10",
-                "start_period": "20s"
-            }
-
             if self.args.shared_mode:
                 internal_port = self.next_internal_broker_port()
                 external_port = self.next_external_broker_port()
@@ -236,6 +229,13 @@ class DockerComposeGenerator:
                 controller["environment"]["KAFKA_LISTENER_SECURITY_PROTOCOL_MAP"] = \
                     "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
                 controller["environment"]["KAFKA_INTER_BROKER_LISTENER_NAME"] = "PLAINTEXT"
+
+                controller["healthcheck"] = {
+                    "test": f"{self.healthcheck_command} cluster-id --bootstrap-controller {name}:{port} || exit 1",
+                    "interval": "10s",
+                    "retries": "10",
+                    "start_period": "20s"
+                }
 
                 if self.bootstrap_servers != "":
                     self.bootstrap_servers += ','
