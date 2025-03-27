@@ -397,7 +397,7 @@ class DockerComposeGenerator:
 
             broker["image"] = f"{self.repository}/{self.args.kafka_container}{self.tc}:" + self.args.release
 
-            broker["depends_on_condition"] = self.controller_containers if self.use_kraft else self.zookeeper_containers
+            broker["depends_on"] = self.controller_containers if self.use_kraft else self.zookeeper_containers
 
             jmx_port = self.next_jmx_external_port()
 
