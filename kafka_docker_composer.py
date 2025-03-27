@@ -52,7 +52,7 @@ class DockerComposeGenerator:
             self.repository = LOCALBUILD
             self.tc = "-tc"
         else:
-            self.repository = REPOSITORY
+            self.repository = self.args.repository
             self.tc = ""
 
         self.zookeepers = ""
@@ -782,6 +782,10 @@ if __name__ == '__main__':
     # optional with defaults
 
     parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
+    parser.add_argument('--repository', default=REPOSITORY, help=f"Repository for the docker image [{REPOSITORY}]")
+    parser.add_argument('--kafka-container', default=KAFKA_CONTAINER,
+                        help=f"Container used for Kafka [{KAFKA_CONTAINER}]")
+
     parser.add_argument('--with-tc', action="store_true", help="Build and use a local image with tc enabled")
     parser.add_argument("--shared-mode", action="store_true", help="Enable shared mode for controllers")
 
@@ -803,9 +807,6 @@ if __name__ == '__main__':
                         help=f"UUID of the cluster [{RANDOM_UUID}]")
 
     parser.add_argument('-p', '--prometheus', default=False, action='store_true', help="Include Prometheus [False]")
-
-    parser.add_argument('--kafka-container', default=KAFKA_CONTAINER,
-                        help=f"Container used for Kafka, default [{KAFKA_CONTAINER}]")
 
     parser.add_argument('--racks', type=int, default=1,
                         help="Number of racks among which the brokers will be distributed evenly [1]")
