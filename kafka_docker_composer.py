@@ -796,8 +796,9 @@ if __name__ == '__main__':
     # optional with defaults
 
     parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
-
-    parser.add_argument('--osk', action='store_true', help="Switch to Open Source Apache Kafka")
+    parser.add_argument('--repository', default=CONFLUENT_REPOSITORY, help=f"Repository for the docker image [{CONFLUENT_REPOSITORY}]")
+    parser.add_argument('--kafka-container', default=CONFLUENT_CONTAINER,
+                        help=f"Container used for Kafka [{CONFLUENT_CONTAINER}]")
 
     parser.add_argument('--with-tc', action="store_true", help="Build and use a local image with tc enabled")
     parser.add_argument("--shared-mode", action="store_true", help="Enable shared mode for controllers")
