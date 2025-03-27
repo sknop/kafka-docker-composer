@@ -800,6 +800,8 @@ if __name__ == '__main__':
     parser.add_argument('--kafka-container', default=CONFLUENT_CONTAINER,
                         help=f"Container used for Kafka [{CONFLUENT_CONTAINER}]")
 
+    parser.add_argument('--osk', action="store_true",help="Use Open Source Apache Kafka")
+
     parser.add_argument('--with-tc', action="store_true", help="Build and use a local image with tc enabled")
     parser.add_argument("--shared-mode", action="store_true", help="Enable shared mode for controllers")
 
