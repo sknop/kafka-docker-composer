@@ -10,7 +10,15 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
 
 DEFAULT_RELEASE = "7.9.0"
-REPOSITORY = "confluentinc"
+CONFLUENT_REPOSITORY = "confluentinc"
+CONFLUENT_CONTAINER = "cp-server"
+CONFLUENT_KAFKA_CLUSTER_CMD = "/usr/bin/kafka-cluster"
+
+APACHE_REPOSITORY = "apache"
+APACHE_CONTAINER = "kafka"
+OSK_KAFKA_CLUSTER_CMD = "/opt/kafka/bin/kafka-cluster.sh"
+
+
 LOCALBUILD = "localbuild"
 JMX_PROMETHEUS_JAVA_AGENT_VERSION = "1.1.0"
 JMX_PORT = "8091"
@@ -26,7 +34,6 @@ BROKER_INTERNAL_BASE_PORT = 19090
 LOCAL_VOLUMES = "$PWD/volumes/"
 
 DOCKER_COMPOSE_FILE = "docker-compose.yml"
-KAFKA_CONTAINER = "cp-server"
 
 ZOOKEEPER_JMX_CONFIG = "zookeeper_config.yml"
 ZOOKEEPER_PORT = "2181"
@@ -62,6 +69,8 @@ class DockerComposeGenerator:
         self.schema_registry_urls = ""
         self.connect_urls = ""
         self.ksqldb_urls = ""
+
+        self.healthcheck_command = "KAFKA_OPTS= " + (OSK_KAFKA_CLUSTER_CMD if self.args.osk else CONFLUENT_KAFKA_CLUSTER_CMD)
 
         self.controllers = []
 
@@ -199,12 +208,21 @@ class DockerComposeGenerator:
                 "KAFKA_DEFAULT_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_OFFSET_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": self.replication_factor(),
-                "KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
-                "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
-                "KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS": self.replication_factor(),
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + CONTROLLER_JMX_CONFIG
+            }
+
+            if not self.args.osk:
+                controller["environment"]["KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR"] = self.replication_factor()
+                controller["environment"]["KAFKA_METRIC_REPORTERS"] = "io.confluent.metrics.reporter.ConfluentMetricsReporter"
+                controller["environment"]["KAFKA_CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS"] = self.replication_factor()
+
+            controller["healthcheck"] = {
+                "test": f"{self.healthcheck_command} cluster-id --bootstrap-controller {name}:{port} || exit 1",
+                "interval": "10s",
+                "retries": "10",
+                "start_period": "20s"
             }
 
             if self.args.shared_mode:
@@ -219,12 +237,6 @@ class DockerComposeGenerator:
                     "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
                 controller["environment"]["KAFKA_INTER_BROKER_LISTENER_NAME"] = "PLAINTEXT"
 
-                controller["healthcheck"] = {
-                    "test": f"curl -fail --silent http://{name}:8090/kafka/v3/clusters/ --output /dev/null || exit 1",
-                    "interval": "10s",
-                    "retries": "10",
-                    "start_period": "20s"
-                }
                 if self.bootstrap_servers != "":
                     self.bootstrap_servers += ','
                 self.bootstrap_servers += f"{name}:{internal_port}"
@@ -400,11 +412,13 @@ class DockerComposeGenerator:
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + BROKER_JMX_CONFIG,
                 "KAFKA_MIN_INSYNC_REPLICAS": self.min_insync_replicas(),
-                "KAFKA_METRIC_REPORTERS": "io.confluent.metrics.reporter.ConfluentMetricsReporter",
-                "KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_CLUSTER_LINK_ENABLE": self.replication_factor() >= 3,
                 "KAFKA_CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE": self.replication_factor() >= 3,
             }
+
+            if not self.args.osk:
+                broker["environment"]["KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR"] = self.replication_factor()
+                broker["environment"]["KAFKA_METRIC_REPORTERS"] = "io.confluent.metrics.reporter.ConfluentMetricsReporter"
 
             controller_dict = {}
 
@@ -441,7 +455,7 @@ class DockerComposeGenerator:
             ]
 
             broker["healthcheck"] = {
-                "test": f"curl -fail --silent http://{name}:8090/kafka/v3/clusters/ --output /dev/null || exit 1",
+                "test": f"{self.healthcheck_command} cluster-id --bootstrap-server localhost:{port} || exit 1",
                 "interval": "10s",
                 "retries": "10",
                 "start_period": "20s"
@@ -782,9 +796,8 @@ if __name__ == '__main__':
     # optional with defaults
 
     parser.add_argument('-r', '--release', default=DEFAULT_RELEASE, help=f"Docker images release [{DEFAULT_RELEASE}]")
-    parser.add_argument('--repository', default=REPOSITORY, help=f"Repository for the docker image [{REPOSITORY}]")
-    parser.add_argument('--kafka-container', default=KAFKA_CONTAINER,
-                        help=f"Container used for Kafka [{KAFKA_CONTAINER}]")
+
+    parser.add_argument('--osk', action='store_true', help="Switch to Open Source Apache Kafka")
 
     parser.add_argument('--with-tc', action="store_true", help="Build and use a local image with tc enabled")
     parser.add_argument("--shared-mode", action="store_true", help="Enable shared mode for controllers")
@@ -819,6 +832,11 @@ if __name__ == '__main__':
     parser.add_argument('--config',
                         help="Properties config file, values will be overridden by command line arguments")
     args = parser.parse_args()
+
+    if args.osk:
+        args.repository = APACHE_REPOSITORY
+        args.kafka_container = APACHE_CONTAINER
+        args.release = "latest"
 
     if args.config:
         args = load_configfile(args, args.config)
