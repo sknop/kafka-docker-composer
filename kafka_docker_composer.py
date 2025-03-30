@@ -207,6 +207,8 @@ class DockerComposeGenerator:
                 "KAFKA_BROKER_RACK": f"rack-{rack}",
                 "KAFKA_DEFAULT_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_OFFSET_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
                 "KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
@@ -414,6 +416,8 @@ class DockerComposeGenerator:
                 "KAFKA_MIN_INSYNC_REPLICAS": self.min_insync_replicas(),
                 "KAFKA_CONFLUENT_CLUSTER_LINK_ENABLE": self.replication_factor() >= 3,
                 "KAFKA_CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE": self.replication_factor() >= 3,
+                "KAFKA_REPLICATION_FACTOR": self.replication_factor(),
+                "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR": self.replication_factor(),              
             }
 
             if not self.args.osk:
