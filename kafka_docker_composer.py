@@ -7,7 +7,9 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 from generators.broker_generator import BrokerGenerator
 from generators.connect_generator import ConnectGenerator
+from generators.control_center_generator import ControlCenterGenerator
 from generators.controller_generator import ControllerGenerator
+from generators.ksqldb_generator import KSQLDBGenerator
 from generators.schema_registry_generator import SchemaRegistryGenerator
 from generators.zookeeper_generator import ZooKeeperGenerator
 
@@ -150,15 +152,17 @@ class DockerComposeGenerator:
         broker_generator = BrokerGenerator(self)
         schema_registry_generator = SchemaRegistryGenerator(self)
         connect_generator = ConnectGenerator(self)
+        ksqldb_generator = KSQLDBGenerator(self)
+        control_center_generator = ControlCenterGenerator(self)
 
         services += zookeeper_generator.generate()
         services += controller_generator.generate()
         services += broker_generator.generate()
         services += schema_registry_generator.generate()
         services += connect_generator.generate()
+        services += ksqldb_generator.generate()
+        services += control_center_generator.generate()
 
-        services += self.generate_ksqldb_services()
-        services += self.generate_control_center_service()
         services += self.generate_prometheus_service()
         services += self.generate_grafana_service()
         variables = {
@@ -192,95 +196,6 @@ class DockerComposeGenerator:
             return self.controller_containers + self.broker_containers + self.schema_registry_containers
         else:
             return self.broker_containers + self.schema_registry_containers
-
-    def generate_ksqldb_services(self):
-        ksqldbs = []
-        targets = []
-        ksqldb_hosts = []
-
-        job = {
-            "name": "ksqldb",
-            "scrape_interval": "5s",
-            "targets": targets
-        }
-
-        for ksqldb_id in range(1, self.args.ksqldb_instances + 1):
-            port = 8087 + ksqldb_id
-
-            name = self.create_name("ksqldb", ksqldb_id)
-
-            ksqldb = {
-                'name': name,
-                "hostname": name,
-                "container_name": name,
-                "image": f"{self.repository}/cp-ksqldb-server{self.tc}:" + self.args.release,
-                "depends_on_condition": self.generate_depends_on(),
-                "environment": {
-                    "KSQL_LISTENERS": f"http://0.0.0.0:{port}",
-                    "KSQL_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE": "true",
-                    "KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE": "true",
-                    "KSQL_KSQL_CONNECT_URL": self.connect_urls,
-                    "KSQL_KSQL_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
-                    "KSQL_KSQL_SERVICE_ID": "kafka-docker-composer",
-                    "KSQL_KSQL_HIDDEN_TOPICS": "^_.*",
-                    "KSQL_KSQL_INTERNAL_TOPICS_REPLICAS": self.replication_factor(),
-                    "KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR": self.replication_factor(),
-                },
-                "capability": [
-                    "NET_ADMIN"
-                ],
-                "ports": {
-                    port: port
-                },
-                "healthcheck": {
-                    "test": f"curl -fail --silent http://{name}:{port}/healthcheck --output /dev/null || exit 1",
-                    "interval": "10s",
-                    "retries": "20",
-                    "start_period": "20s"
-                },
-                "volumes": [
-                    LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE
-                ]
-            }
-
-            ksqldbs.append(ksqldb)
-            ksqldb_hosts.append(f"http://{name}:{port}")
-            self.ksqldb_containers.append(name)
-
-        self.ksqldb_urls = ",".join(ksqldb_hosts)
-
-        return ksqldbs
-
-    def generate_control_center_service(self):
-        control_centers = []
-
-        if self.args.control_center:
-            control_center = {
-                "name": "control-center",
-                "hostname": "control-center",
-                "container_name": "control-center",
-                "image": f"{self.repository}/cp-enterprise-control-center{self.tc}:" + self.args.release,
-                "depends_on_condition": self.generate_depends_on() + self.connect_containers + self.ksqldb_containers,
-                "environment": {
-                    "CONTROL_CENTER_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "CONTROL_CENTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
-                    "CONTROL_CENTER_REPLICATION_FACTOR": self.replication_factor(),
-                    "CONTROL_CENTER_CONNECT_CONNECT_CLUSTER": self.connect_urls,
-                    "CONTROL_CENTER_KSQL_KSQL_URL": self.ksqldb_urls
-                },
-                "capability": [
-                    "NET_ADMIN"
-                ],
-                "ports": {
-                    9021: 9021
-                }
-
-            }
-
-            control_centers.append(control_center)
-
-        return control_centers
 
     def generate_prometheus_service(self):
         proms = []
