@@ -1,5 +1,4 @@
 from .generator import Generator
-from constants import *
 
 class ControlCenterGenerator(Generator):
     def __init__(self, base):
