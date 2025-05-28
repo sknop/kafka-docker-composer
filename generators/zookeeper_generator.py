@@ -1,6 +1,5 @@
 from .generator import Generator
-from constants import JMX_PORT, JMX_PROMETHEUS_JAVA_AGENT, LOCAL_VOLUMES, JMX_JAR_FILE, \
-    ZOOKEEPER_PORT, ZOOKEEPER_JMX_CONFIG
+from constants import *
 
 import sys
 

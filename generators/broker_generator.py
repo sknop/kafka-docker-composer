@@ -1,5 +1,5 @@
 from .generator import Generator
-from constants import JMX_PORT, JMX_PROMETHEUS_JAVA_AGENT, LOCAL_VOLUMES, JMX_JAR_FILE, BROKER_JMX_CONFIG
+from constants import *
 
 
 class BrokerGenerator(Generator):

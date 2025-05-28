@@ -1,5 +1,5 @@
 from .generator import Generator
-from constants import JMX_PORT, JMX_PROMETHEUS_JAVA_AGENT, CONTROLLER_JMX_CONFIG, LOCAL_VOLUMES, JMX_JAR_FILE
+from constants import *
 
 class ControllerGenerator(Generator):
     def __init__(self, base):
