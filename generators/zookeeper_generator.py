@@ -3,32 +3,33 @@ from constants import *
 
 import sys
 
+def calculate_zookeeper_groups(base):
+    zookeeper_groups = ""
+    if base.args.zookeeper_groups > 1:
+        zookeepers_per_group = base.args.zookeepers // base.args.zookeeper_groups
+        rest = base.args.zookeepers % base.args.zookeeper_groups
+        if rest != 0:
+            print("ERROR, no equal distribution of zookeeper nodes across groups #ZK {} #GR {} rest {} "
+                  .format(base.args.zookeepers, base.args.zookeeper_groups, rest))
+            sys.exit(-1)
+
+        groups = []
+        for group in range(base.args.zookeeper_groups):
+            zks = ":".join([str(1 + x + group * zookeepers_per_group) for x in range(zookeepers_per_group)])
+            groups.append(zks)
+
+        zookeeper_groups = ";".join(groups)
+
+    return zookeeper_groups
+
+
 class ZooKeeperGenerator(Generator):
     def __init__(self, base):
         super().__init__(base)
 
-
-    def calculate_zookeeper_groups(self):
-        zookeeper_groups = ""
-        if self.base.args.zookeeper_groups > 1:
-            zookeepers_per_group = self.base.args.zookeepers // self.base.args.zookeeper_groups
-            rest = self.base.args.zookeepers % self.base.args.zookeeper_groups
-            if rest != 0:
-                print("ERROR, no equal distribution of zookeeper nodes across groups #ZK {} #GR {} rest {} "
-                      .format(self.base.args.zookeepers, self.base.args.zookeeper_groups, rest))
-                sys.exit(-1)
-
-            groups = []
-            for group in range(self.base.args.zookeeper_groups):
-                zks = ":".join([str(1 + x + group * zookeepers_per_group) for x in range(zookeepers_per_group)])
-                groups.append(zks)
-
-            zookeeper_groups = ";".join(groups)
-
-        return zookeeper_groups
-
     def generate(self):
-        zookeeper_groups = self.calculate_zookeeper_groups()
+        base = self.base
+        zookeeper_groups = calculate_zookeeper_groups(base)
 
         zookeepers = []
         zookeeper_servers = []
@@ -40,12 +41,12 @@ class ZooKeeperGenerator(Generator):
             "targets": targets
         }
 
-        for zk in range(1, self.base.args.zookeepers + 1):
+        for zk in range(1, base.args.zookeepers + 1):
             zookeeper_external_port = 2180 + zk
 
             zookeeper = {}
 
-            name = self.base.create_name("zookeeper", zk)
+            name = base.create_name("zookeeper", zk)
             zookeeper["name"] = name
             zookeeper["hostname"] = name
             zookeeper["container_name"] = name
@@ -54,9 +55,9 @@ class ZooKeeperGenerator(Generator):
 
             zookeeper_servers.append(name + ":2888:3888")
 
-            zookeeper["image"] = f"{self.base.repository}/cp-zookeeper{self.base.tc}:" + self.base.args.release
+            zookeeper["image"] = f"{base.repository}/cp-zookeeper{base.tc}:" + base.args.release
 
-            jmx_port = self.base.next_jmx_external_port()
+            jmx_port = base.next_jmx_external_port()
 
             environment = {
                 "ZOOKEEPER_SERVER_ID": zk,
@@ -67,7 +68,7 @@ class ZooKeeperGenerator(Generator):
                 "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + ZOOKEEPER_JMX_CONFIG
             }
 
-            if self.base.args.zookeeper_groups > 1:
+            if base.args.zookeeper_groups > 1:
                 environment["ZOOKEEPER_GROUPS"] = zookeeper_groups
 
             zookeeper["environment"] = environment
@@ -85,7 +86,7 @@ class ZooKeeperGenerator(Generator):
             zookeeper["ports"] = {
                 zookeeper_external_port: ZOOKEEPER_PORT,
                 jmx_port: jmx_port,
-                self.base.next_agent_port(): JMX_PORT
+                base.next_agent_port(): JMX_PORT
             }
 
             zookeepers.append(zookeeper)
@@ -94,11 +95,11 @@ class ZooKeeperGenerator(Generator):
         for zk in zookeepers:
             zk["environment"]["ZOOKEEPER_SERVERS"] = zk_servers
 
-        self.base.zookeepers = ",".join([z["name"] + ":" + ZOOKEEPER_PORT for z in zookeepers])
+        base.zookeepers = ",".join([z["name"] + ":" + ZOOKEEPER_PORT for z in zookeepers])
 
-        self.base.zookeeper_containers = [z["name"] for z in zookeepers]
+        base.zookeeper_containers = [z["name"] for z in zookeepers]
 
-        if self.base.args.zookeepers > 0:
-            self.base.prometheus_jobs.append(job)
+        if base.args.zookeepers > 0:
+            base.prometheus_jobs.append(job)
 
         return zookeepers
