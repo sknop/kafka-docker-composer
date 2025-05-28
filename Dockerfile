@@ -1,12 +1,13 @@
-ARG REPOSITORY
+ARG REPOSITORY=confluentinc
 ARG IMAGE
-ARG CP_VERSION
+ARG CP_VERSION=7.9.1
 ARG MACHINE
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 
 FROM $REPOSITORY/$IMAGE:$CP_VERSION AS base
 USER root
+RUN sed -i "s/packages\.adoptium\.net/adoptium\.jfrog\.io/g" /etc/yum.repos.d/adoptium.repo
 RUN yum install -y \
      libmnl \
      findutils \
