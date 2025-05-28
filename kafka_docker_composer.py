@@ -6,6 +6,7 @@ import configparser
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from generators.broker_generator import BrokerGenerator
+from generators.connect_generator import ConnectGenerator
 from generators.controller_generator import ControllerGenerator
 from generators.schema_registry_generator import SchemaRegistryGenerator
 from generators.zookeeper_generator import ZooKeeperGenerator
@@ -148,13 +149,14 @@ class DockerComposeGenerator:
         controller_generator = ControllerGenerator(self)
         broker_generator = BrokerGenerator(self)
         schema_registry_generator = SchemaRegistryGenerator(self)
+        connect_generator = ConnectGenerator(self)
 
         services += zookeeper_generator.generate()
         services += controller_generator.generate()
         services += broker_generator.generate()
         services += schema_registry_generator.generate()
+        services += connect_generator.generate()
 
-        services += self.generate_connect_services()
         services += self.generate_ksqldb_services()
         services += self.generate_control_center_service()
         services += self.generate_prometheus_service()
@@ -190,82 +192,6 @@ class DockerComposeGenerator:
             return self.controller_containers + self.broker_containers + self.schema_registry_containers
         else:
             return self.broker_containers + self.schema_registry_containers
-
-    def generate_connect_services(self):
-        connects = []
-        targets = []
-        connect_hosts = []
-
-        job = {
-            "name": "kafka-connect",
-            "scrape_interval": "5s",
-            "targets": targets
-        }
-
-        for connect_id in range(1, self.args.connect_instances + 1):
-            port = 8082 + connect_id
-
-            name = self.create_name("kafka-connect", connect_id)
-            plugin_dirname = "connect-plugin-jars"
-
-            connect = {
-                "name": name,
-                "hostname": name,
-                "container_name": name,
-                "image": f"{self.repository}/cp-server-connect{self.tc}:" + self.args.release,
-                "depends_on_condition": self.generate_depends_on(),
-                "environment": {
-                    "CONNECT_REST_ADVERTISED_PORT": port,
-                    "CONNECT_REST_PORT": port,
-                    "CONNECT_LISTENERS": f"http://0.0.0.0:{port}",
-                    "CONNECT_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "CONNECT_REST_ADVERTISED_HOST_NAME": name,
-                    "CONNECT_GROUP_ID": "kafka-connect",
-                    "CONNECT_CONFIG_STORAGE_TOPIC": "_connect-configs",
-                    "CONNECT_OFFSET_STORAGE_TOPIC": "_connect-offsets",
-                    "CONNECT_STATUS_STORAGE_TOPIC": "_connect-status",
-                    "CONNECT_KEY_CONVERTER": "org.apache.kafka.connect.storage.StringConverter",
-                    "CONNECT_VALUE_CONVERTER": "io.confluent.connect.avro.AvroConverter",
-                    "CONNECT_EXACTLY_ONCE_SOURCE_SUPPORT": "enabled",
-                    "CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL": self.schema_registry_urls,
-                    "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
-                    "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
-                    "CONNECT_STATUS_STORAGE_REPLICATION_FACTOR": self.replication_factor(),
-                    "CONNECT_PLUGIN_PATH": "/usr/share/java,"
-                                           "/usr/share/confluent-hub-components,"
-                                           f"/data/{plugin_dirname}",
-                    "KAFKA_OPTS": JMX_PROMETHEUS_JAVA_AGENT + CONNECT_JMX_CONFIG
-                },
-                "capability": [
-                    "NET_ADMIN"
-                ],
-                "ports": {
-                    port: port
-                },
-                "healthcheck": {
-                    "test": f"curl -fail --silent http://{name}:{port}/connectors --output /dev/null || exit 1",
-                    "interval": "10s",
-                    "retries": "20",
-                    "start_period": "20s"
-                },
-                "volumes": [
-                    LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
-                    LOCAL_VOLUMES + CONNECT_JMX_CONFIG + ":/tmp/" + CONNECT_JMX_CONFIG,
-                    LOCAL_VOLUMES + f"{plugin_dirname}:/data/{plugin_dirname}"
-                ]
-            }
-
-            targets.append(f"{name}:{JMX_PORT}")
-            connects.append(connect)
-            connect_hosts.append(f"http://{name}:{port}")
-            self.connect_containers.append(name)
-
-        self.connect_urls = ",".join(connect_hosts)
-
-        if self.args.connect_instances > 0:
-            self.prometheus_jobs.append(job)
-
-        return connects
 
     def generate_ksqldb_services(self):
         ksqldbs = []
