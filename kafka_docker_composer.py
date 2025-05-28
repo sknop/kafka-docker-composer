@@ -7,6 +7,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 from generators.broker_generator import BrokerGenerator
 from generators.controller_generator import ControllerGenerator
+from generators.schema_registry_generator import SchemaRegistryGenerator
 from generators.zookeeper_generator import ZooKeeperGenerator
 
 # constants
@@ -146,11 +147,13 @@ class DockerComposeGenerator:
         zookeeper_generator = ZooKeeperGenerator(self)
         controller_generator = ControllerGenerator(self)
         broker_generator = BrokerGenerator(self)
+        schema_registry_generator = SchemaRegistryGenerator(self)
 
         services += zookeeper_generator.generate()
         services += controller_generator.generate()
         services += broker_generator.generate()
-        services += self.generate_schema_registry_service()
+        services += schema_registry_generator.generate()
+
         services += self.generate_connect_services()
         services += self.generate_ksqldb_services()
         services += self.generate_control_center_service()
@@ -187,69 +190,6 @@ class DockerComposeGenerator:
             return self.controller_containers + self.broker_containers + self.schema_registry_containers
         else:
             return self.broker_containers + self.schema_registry_containers
-
-    def generate_schema_registry_service(self):
-        schema_registries = []
-
-        schema_registry_hosts = []
-        schema_registry_urls = []
-        targets = []
-        job = {
-            "name": "schema-registry",
-            "scrape_interval": "5s",
-            "targets": targets
-        }
-
-        for schema_id in range(1, self.args.schema_registries + 1):
-            port = 8080 + schema_id
-
-            name = self.create_name("schema-registry", schema_id)
-
-            schema_registry = {
-                "name": name,
-                "hostname": name,
-                "container_name": name,
-                "image": f"{self.repository}/cp-schema-registry{self.tc}:" + self.args.release,
-                "depends_on_condition": self.generate_depends_on(),
-                "environment": {
-                    "SCHEMA_REGISTRY_HOST_NAME": name,
-                    "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS": self.bootstrap_servers,
-                    "SCHEMA_REGISTRY_LISTENERS": f"http://0.0.0.0:{port}",
-                    "SCHEMA_REGISTRY_OPTS": JMX_PROMETHEUS_JAVA_AGENT + SCHEMA_REGISTRY_JMX_CONFIG
-                },
-                "capability": [
-                    "NET_ADMIN"
-                ],
-                "ports": {
-                    port: port
-                },
-                "healthcheck": {
-                    "test": f"curl -fail --silent http://{name}:{port}/subjects --output /dev/null || exit 1",
-                    "interval": "10s",
-                    "retries": "20",
-                    "start_period": "20s"
-                },
-                "volumes": [
-                    LOCAL_VOLUMES + JMX_JAR_FILE + ":/tmp/" + JMX_JAR_FILE,
-                    LOCAL_VOLUMES + SCHEMA_REGISTRY_JMX_CONFIG + ":/tmp/" + SCHEMA_REGISTRY_JMX_CONFIG
-                ]
-            }
-
-            targets.append(f"{name}:{JMX_PORT}")
-
-            schema_registries.append(schema_registry)
-            schema_registry_hosts.append(f"{name}:{port}")
-            schema_registry_urls.append(f"http://{name}:{port}")
-
-            self.schema_registry_containers.append(name)
-
-        self.schema_registries = ",".join(schema_registry_hosts)
-        self.schema_registry_urls = ",".join(schema_registry_urls)
-
-        if self.args.schema_registries > 0:
-            self.prometheus_jobs.append(job)
-
-        return schema_registries
 
     def generate_connect_services(self):
         connects = []
