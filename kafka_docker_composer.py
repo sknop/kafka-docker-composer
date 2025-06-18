@@ -5,52 +5,17 @@ import configparser
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
+from constants import CONTROL_CENTER_NEXT_GEN_RELEASE
 from generators.broker_generator import BrokerGenerator
 from generators.connect_generator import ConnectGenerator
 from generators.control_center_generator import ControlCenterGenerator
+from generators.control_center_next_gen_generator import ControlCenterNextGenerationGenerator
 from generators.controller_generator import ControllerGenerator
 from generators.ksqldb_generator import KSQLDBGenerator
 from generators.schema_registry_generator import SchemaRegistryGenerator
 from generators.zookeeper_generator import ZooKeeperGenerator
 
-# constants
-
-RANDOM_UUID = "Nk018hRAQFytWskYqtQduw"
-
-DEFAULT_RELEASE = "7.9.1"
-CONFLUENT_REPOSITORY = "confluentinc"
-CONFLUENT_CONTAINER = "cp-server"
-CONFLUENT_KAFKA_CLUSTER_CMD = "/usr/bin/kafka-cluster"
-
-APACHE_REPOSITORY = "apache"
-APACHE_CONTAINER = "kafka"
-OSK_KAFKA_CLUSTER_CMD = "/opt/kafka/bin/kafka-cluster.sh"
-
-
-LOCALBUILD = "localbuild"
-JMX_PROMETHEUS_JAVA_AGENT_VERSION = "1.1.0"
-JMX_PORT = "8091"
-JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
-JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"
-JMX_EXTERNAL_PORT = 10000
-JMX_AGENT_PORT = 10100
-HTTP_PORT = 10200
-
-BROKER_EXTERNAL_BASE_PORT = 9090
-BROKER_INTERNAL_BASE_PORT = 19090
-
-LOCAL_VOLUMES = "$PWD/volumes/"
-
-DOCKER_COMPOSE_FILE = "docker-compose.yml"
-
-ZOOKEEPER_JMX_CONFIG = "zookeeper_config.yml"
-ZOOKEEPER_PORT = "2181"
-
-BROKER_JMX_CONFIG = "kafka_config.yml"
-CONTROLLER_JMX_CONFIG = "kafka_controller.yml"
-SCHEMA_REGISTRY_JMX_CONFIG = "schema-registry.yml"
-CONNECT_JMX_CONFIG = "kafka_connect.yml"
-
+from constants import *
 
 class Generator:
     def __init__(self, base):
@@ -154,6 +119,7 @@ class DockerComposeGenerator:
         connect_generator = ConnectGenerator(self)
         ksqldb_generator = KSQLDBGenerator(self)
         control_center_generator = ControlCenterGenerator(self)
+        control_center_next_gen_generator = ControlCenterNextGenerationGenerator(self)
 
         services += zookeeper_generator.generate()
         services += controller_generator.generate()
@@ -162,9 +128,12 @@ class DockerComposeGenerator:
         services += connect_generator.generate()
         services += ksqldb_generator.generate()
         services += control_center_generator.generate()
+        services += control_center_next_gen_generator.generate()
 
         services += self.generate_prometheus_service()
         services += self.generate_grafana_service()
+        services += self.generate_alertmanager_service()
+
         variables = {
             "docker_compose_version": "3.8",
             "services": services
@@ -204,13 +173,14 @@ class DockerComposeGenerator:
                 "name": "prometheus",
                 "hostname": "prometheus",
                 "container_name": "prometheus",
-                "image": "prom/prometheus",
+                "image": "confluentinc/cp-enterprise-prometheus:" + self.args.control_center_next_gen_release,
                 "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "ports": {
                     9090: 9090
                 },
                 "volumes": [
-                    "$PWD/volumes/prometheus.yml:/etc/prometheus/prometheus.yml"
+                    "$PWD/volumes/prometheus.yml:/etc/prometheus/prometheus.yml",
+                    "$PWD/volumes/"
                 ]
             }
             proms.append(prometheus)
@@ -243,6 +213,28 @@ class DockerComposeGenerator:
             grafanas.append(grafana)
 
         return grafanas
+
+    def generate_alertmanager_service(self):
+        alertmanagers = []
+        if self.args.control_center_next_gen:
+            alertmanager = {
+                "name": "alertmanager",
+                "hostname": "cp-enterprise-alertmanager",
+                "container_name": "alertmanager",
+                "image": f"{self.args.repository}/cp-enterprise-alertmanager:" + self.args.control_center_next_gen_release,
+                "depends_on": [
+                    "prometheus"
+                ],
+                "ports" : {
+                    29093 : 9093
+                },
+                "volumes": {
+                    LOCAL_VOLUMES + "config:/mnt/config"
+                }
+            }
+            alertmanagers.append(alertmanager)
+
+        return alertmanagers
 
     @staticmethod
     def next_rack(rack, total_racks):
@@ -300,6 +292,10 @@ if __name__ == '__main__':
                         help="Number of ksqlDB instances [0]")
     parser.add_argument('--control-center', default=False, action='store_true',
                         help="Include Confluent Control Center [False]")
+    parser.add_argument('--control-center-next-gen', default=False, action='store_true',
+                        help="Add net-gen Confluent Control Center [False]")
+    parser.add_argument('--control-center-next-gen-release', default=CONTROL_CENTER_NEXT_GEN_RELEASE,
+                        help=f"Next generation release [{CONTROL_CENTER_NEXT_GEN_RELEASE}]")
 
     parser.add_argument('--uuid', type=str, default=RANDOM_UUID,
                         help=f"UUID of the cluster [{RANDOM_UUID}]")
@@ -333,6 +329,10 @@ if __name__ == '__main__':
 
     if args.zookeepers and args.shared_mode:
         print("Zookeeper cannot run in shared mode with a Broker. Nice try!", file=sys.stderr)
+        sys.exit(2)
+
+    if args.control_center and args.control_center_next_gen:
+        print("Choose either old or new type of the Control Center, not both!", file=sys.stderr)
         sys.exit(2)
 
     generator = DockerComposeGenerator(args)

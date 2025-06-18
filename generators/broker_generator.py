@@ -1,8 +1,8 @@
-from .generator import Generator
+from .broker_controller_generator import BrokerControllerGenerator
 from constants import *
 
 
-class BrokerGenerator(Generator):
+class BrokerGenerator(BrokerControllerGenerator):
     def __init__(self, base):
         super().__init__(base)
 
@@ -59,6 +59,9 @@ class BrokerGenerator(Generator):
             if not base.args.osk:
                 broker["environment"]["KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR"] = base.replication_factor()
                 broker["environment"]["KAFKA_METRIC_REPORTERS"] = "io.confluent.metrics.reporter.ConfluentMetricsReporter"
+
+            if base.args.control_center_next_gen:
+                self.generate_c3plusplus(broker["environment"])
 
             controller_dict = {}
 

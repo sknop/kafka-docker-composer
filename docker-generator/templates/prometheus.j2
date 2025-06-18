@@ -1,10 +1,36 @@
 global:
-    scrape_interval: 15s
+    scrape_interval: 60s
+    evaluation_interval: 60s # Evaluate rules every 60 seconds.
 
     # Attach these labels to any time series or alerts when communicating with
     # external systems (federation, remote storage, Alertmanager).
     external_labels:
         monitor: 'kafka-monitor'
+
+# Alertmanager configuration
+alerting:
+    alertmanagers:
+        - scheme: http
+          static_configs:
+            - targets:
+                - alertmanager:9093
+global:
+    evaluation_interval: 60s
+    scrape_interval: 60s
+otlp:
+    promote_resource_attributes:
+    - host.hostname
+    - java.version
+    - kafka.broker.id
+    - kafka.cluster.id
+    - kafka.version
+    - type
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+    # recording rules file has rules for aggregating partition level metrics in advance so that queries at runtime are faster
+    - 'recording_rules-generated.yml'
+    # trigger rules file is used for defining triggers which are configured by the user using C3 UI
+    - 'trigger_rules-generated.yml'
 
 scrape_configs:
 {% for job in jobs %}
@@ -18,3 +44,8 @@ scrape_configs:
             - {{ target }}
     {%  endfor %}
 {% endfor %}
+
+# A 10min time window is enough because it can easily absorb retries and network delays.
+storage:
+    tsdb:
+        out_of_order_time_window: 10m
