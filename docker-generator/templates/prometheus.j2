@@ -2,11 +2,6 @@ global:
     scrape_interval: 60s
     evaluation_interval: 60s # Evaluate rules every 60 seconds.
 
-    # Attach these labels to any time series or alerts when communicating with
-    # external systems (federation, remote storage, Alertmanager).
-    external_labels:
-        monitor: 'kafka-monitor'
-
 # Alertmanager configuration
 alerting:
     alertmanagers:
@@ -14,9 +9,7 @@ alerting:
           static_configs:
             - targets:
                 - alertmanager:9093
-global:
-    evaluation_interval: 60s
-    scrape_interval: 60s
+
 otlp:
     promote_resource_attributes:
     - host.hostname

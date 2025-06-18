@@ -5,7 +5,6 @@ import configparser
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from constants import CONTROL_CENTER_NEXT_GEN_RELEASE
 from generators.broker_generator import BrokerGenerator
 from generators.connect_generator import ConnectGenerator
 from generators.control_center_generator import ControlCenterGenerator
@@ -174,12 +173,11 @@ class DockerComposeGenerator:
                 "hostname": "prometheus",
                 "container_name": "prometheus",
                 "image": "confluentinc/cp-enterprise-prometheus:" + self.args.control_center_next_gen_release,
-                "depends_on_condition": self.broker_containers + self.schema_registry_containers,
                 "ports": {
                     9090: 9090
                 },
                 "volumes": [
-                    "$PWD/volumes/prometheus.yml:/etc/prometheus/prometheus.yml",
+                    "$PWD/volumes/prometheus.yml:/etc/confluent-control-center/prometheus-generated.yml",
                     "$PWD/volumes/"
                 ]
             }
