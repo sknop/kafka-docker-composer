@@ -24,6 +24,8 @@ options:
   -s SCHEMA_REGISTRIES, --schema-registries SCHEMA_REGISTRIES
                         Number of Schema Registry instances [0]
   --control-center      Include Confluent Control Center [False]
+  --control-center-next-gen
+                        Add net-gen Confluent Control Center [False]
   --uuid UUID           UUID of the cluster [Nk018hRAQFytWskYqtQduw]
   -p, --prometheus      Include Prometheus [False]
   --kafka-container KAFKA_CONTAINER
@@ -64,5 +66,4 @@ started in the same network for easy testing.
 
 **TODO:**
 * Add security
-* Fix dashboards for Grafana
 
