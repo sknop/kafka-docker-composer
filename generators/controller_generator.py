@@ -85,8 +85,8 @@ class ControllerGenerator(BrokerControllerGenerator):
                     base.bootstrap_servers += ','
                 base.bootstrap_servers += f"{name}:{internal_port}"
 
-                if base.args.control_center_next_gen:
-                    controller["depends_on"] = ["prometheus"]
+            if base.args.control_center_next_gen:
+                controller["depends_on"] = ["prometheus"]
 
                 # end for
 

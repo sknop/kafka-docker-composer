@@ -37,9 +37,9 @@ class BrokerGenerator(BrokerControllerGenerator):
 
             broker["image"] = f"{base.repository}/{base.args.kafka_container}{base.tc}:" + base.args.release
 
-            broker["depends_on"] = base.controller_containers if base.use_kraft else base.zookeeper_containers
+            broker["depends_on"] = base.controller_containers[:] if base.use_kraft else base.zookeeper_containers[:]
             if base.args.control_center_next_gen:
-                broker["depends_on"] += "prometheus"
+                broker["depends_on"].append("prometheus")
 
             jmx_port = base.next_jmx_external_port()
 
