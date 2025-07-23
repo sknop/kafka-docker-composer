@@ -12,7 +12,7 @@ OSK_KAFKA_CLUSTER_CMD = "/opt/kafka/bin/kafka-cluster.sh"
 
 
 LOCALBUILD = "localbuild"
-JMX_PROMETHEUS_JAVA_AGENT_VERSION = "1.1.0"
+JMX_PROMETHEUS_JAVA_AGENT_VERSION = "1.3.0"
 JMX_PORT = "8091"
 JMX_JAR_FILE = f"jmx_prometheus_javaagent-{JMX_PROMETHEUS_JAVA_AGENT_VERSION}.jar"
 JMX_PROMETHEUS_JAVA_AGENT = f"-javaagent:/tmp/{JMX_JAR_FILE}={JMX_PORT}:/tmp/"

@@ -9,12 +9,14 @@ class ControlCenterNextGenerationGenerator(Generator):
         base = self.base
         control_centers = []
 
+        # No base.tc, since the underlying image cannot be built
+
         if base.args.control_center_next_gen:
             control_center = {
                 "name": "control-center",
                 "hostname": "control-center",
                 "container_name": "control-center",
-                "image": f"{base.repository}/cp-enterprise-control-center-next-gen{base.tc}:" + base.args.control_center_next_gen_release,
+                "image": f"confluentinc/cp-enterprise-control-center-next-gen:" + base.args.control_center_next_gen_release,
                 "depends_on_condition": base.generate_depends_on() + base.connect_containers + base.ksqldb_containers,
                 "environment": {
                     "CONTROL_CENTER_BOOTSTRAP_SERVERS": base.bootstrap_servers,

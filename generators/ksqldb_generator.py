@@ -22,11 +22,13 @@ class KSQLDBGenerator(Generator):
 
             name = base.create_name("ksqldb", ksqldb_id)
 
+            # No base.tc since the underlying image cannot be built
+
             ksqldb = {
                 'name': name,
                 "hostname": name,
                 "container_name": name,
-                "image": f"{base.repository}/cp-ksqldb-server{base.tc}:" + base.args.release,
+                "image": f"confluentinc/cp-ksqldb-server:" + base.args.release,
                 "depends_on_condition": base.generate_depends_on(),
                 "environment": {
                     "KSQL_LISTENERS": f"http://0.0.0.0:{port}",
