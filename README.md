@@ -12,13 +12,13 @@ Kafka docker-compose Generator
 options:
   -h, --help            show this help message and exit
   -r RELEASE, --release RELEASE
-                        Docker images release [7.4.0]
+                        Docker images release [8.0.0]
   -b BROKERS, --brokers BROKERS
                         Number of Brokers [1]
   -z ZOOKEEPERS, --zookeepers ZOOKEEPERS
                         Number of ZooKeepers [0] - mutually exclusive with controllers
   -c CONTROLLERS, --controllers CONTROLLERS
-                        Number of Kafka Connector instances [0] - mutually exclusive with zookeepers
+                        Number of Kafka Controller instances [0] - mutually exclusive with zookeepers
   -C CONNECTS, --connect CONNECTS
                         Number of Kafka Connect instances [0]
   -s SCHEMA_REGISTRIES, --schema-registries SCHEMA_REGISTRIES
