@@ -69,6 +69,7 @@ class DockerComposeGenerator:
 
         self.use_kraft = self.args.controllers > 0
         self.node_id = 0
+        self.controller_node_id = 1000
         self.internal_port = BROKER_INTERNAL_BASE_PORT
         self.external_port = BROKER_EXTERNAL_BASE_PORT
 
@@ -87,6 +88,10 @@ class DockerComposeGenerator:
     def next_node_id(self):
         self.node_id += 1
         return self.node_id
+
+    def next_controller_node_id(self):
+        self.controller_node_id += 1
+        return self.controller_node_id
 
     def next_internal_broker_port(self):
         self.internal_port += 1

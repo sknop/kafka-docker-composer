@@ -21,7 +21,7 @@ class ControllerGenerator(BrokerControllerGenerator):
 
         for counter in range(1, base.args.controllers + 1):
             port = base.next_internal_broker_port()
-            node_id = base.next_node_id()
+            node_id = base.next_controller_node_id()
 
             controller = {}
 
