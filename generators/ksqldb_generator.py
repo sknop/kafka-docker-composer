@@ -49,7 +49,7 @@ class KSQLDBGenerator(Generator):
                     port: port
                 },
                 "healthcheck": {
-                    "test": f"curl -fail --silent http://{name}:{port}/healthcheck --output /dev/null || exit 1",
+                    "test": f"bash -c 'exec 3<>/dev/tcp/{name}/{port}' || exit 1",
                     "interval": "10s",
                     "retries": "20",
                     "start_period": "20s"
